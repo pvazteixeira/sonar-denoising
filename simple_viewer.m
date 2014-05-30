@@ -27,11 +27,13 @@ message_count = size(data.vehicle_pose,2);
 
 pose = cell2mat(data.vehicle_pose); % collapse onto an array.
 
+G = green_cart(95, 0.01, 0.01);
+
 figure();
 for i=1:message_count;
     tic
     % position
-    subplot(1,3,1:2);
+    subplot(1,4,1:2);
     plot3(pose(1,1:i), pose(2,1:i), -pose(3,1:i),'-b.');
     axis equal;
     xlabel('x [m]');
@@ -40,11 +42,17 @@ for i=1:message_count;
     title('Vehicle position');
     
     % sonar
-    subplot(1,3,3);
+    subplot(1,4,3);
     imshow(data.frame{i});
     xlabel('Azimuth');
     ylabel('Range');   
     title('Sonar');
+    
+    % sonar (deblurred)
+    %frame_d = deconvreg(data.frame{i}, G);
+    %imshow(frame.d);
+    %title('Sonar (deblurred)');
+    
     drawnow;
     toc
 end
