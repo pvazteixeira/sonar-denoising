@@ -1,4 +1,12 @@
+% PSF_ESTIMATION.M Estimates PSF using blind deconvolution from a single
+% frame
+%
+% Pedro Vaz Teixeira, May 2014
+% pvt@mit.edu
+
 close all
+
+frame = imread('data/frame.bmp');
 
 step = 2;
 kernel_size_h = 96;
@@ -14,7 +22,6 @@ for i=step:step:10*step
     figure(2)
     subplot(1,10,i/step)
     imshow(J)
-    title(['frame (',num2str(i),')'])
-    
+    title(['frame (',num2str(i),')']) 
 end
     
