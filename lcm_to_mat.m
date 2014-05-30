@@ -51,7 +51,9 @@ while true
         % frame data
         serialized_image_data = typecast(message.m_cData, 'uint8');
         data.frame{message_count} = flip(reshape(serialized_image_data, 96, 512)'); % deserialize & store
-               
+        data.window_start{message_count} = 0.375*typecast(message.m_nWindowStart,'int32');       
+        data.window_length{message_count} = 1.125*(2^(typecast(message.m_nWindowStart,'int32')));
+        
         % pose data
         x = typecast(message.m_fSonarXOffset, 'double');
         y = typecast(message.m_fSonarYOffset, 'double');
