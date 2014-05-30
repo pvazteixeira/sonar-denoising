@@ -1,6 +1,6 @@
 #!/bin/sh
 
-lcm-gen -j ../3dfls/lcmtypes/hauv_didson_t.lcm
+lcm-gen -j ../3dfls/3dfls/lcmtypes/hauv_didson_t.lcm
 
 javac -cp /usr/local/share/java/lcm.jar hauv/*.java
 
