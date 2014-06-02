@@ -7,7 +7,7 @@ function [ cart_frame, res_x, res_y ] = polarToCart( polar_frame, window_start, 
 %   Pedro Vaz Teixeira, May 2014
 %   pvt@mit.edu
 
-    global n_beams beam_width n_bins bin_width min_range max_range;
+    %global n_beams beam_width n_bins bin_width min_range max_range;
 
     n_beams = 96;
     beam_width = deg2rad(0.3);
@@ -37,8 +37,11 @@ function [ cart_frame, res_x, res_y ] = polarToCart( polar_frame, window_start, 
         x = x0 + (i-1)*x_scale;
         for j=1:width
             y = y0 + (j-1)*y_scale;
-            [beam, bin] = toBeamBin(x, y);
-            if ( beam==-1 || bin==-1)
+            
+            beam = n_beams/2 - floor(atan2(y, x)/beam_width);
+            bin = floor( (sqrt( x*x + y*y) - min_range)/bin_width );
+                
+            if ( beam < 0 || beam >= 96 || bin < 0 || bin >= 512)
                 cart_frame(j,i) = 0;
             else
                 cart_frame(j,i) = double(polar_frame(bin+1, beam+1));
