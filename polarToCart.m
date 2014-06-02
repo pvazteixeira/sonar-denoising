@@ -28,8 +28,8 @@ function [ cart_frame, res_x, res_y ] = polarToCart( polar_frame, window_start, 
     height = round(x_span / y_scale);
     x_scale = x_span / height;
 
-    res_x = height/x_span;
-    res_y = -width/y_span;
+    res_x = height/x_span; % px/m (invert to obtain size of each pixel)
+    res_y = -width/y_span; % px/m 
     
     cart_frame = zeros(width, height);
     
@@ -41,7 +41,7 @@ function [ cart_frame, res_x, res_y ] = polarToCart( polar_frame, window_start, 
             beam = n_beams/2 - floor(atan2(y, x)/beam_width);
             bin = floor( (sqrt( x*x + y*y) - min_range)/bin_width );
                 
-            if ( beam < 0 || beam >= 96 || bin < 0 || bin >= 512)
+            if ( beam < 0 || beam >= n_beams || bin < 0 || bin >= n_bins)
                 cart_frame(j,i) = 0;
             else
                 cart_frame(j,i) = double(polar_frame(bin+1, beam+1));
