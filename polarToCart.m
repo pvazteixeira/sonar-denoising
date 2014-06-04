@@ -24,12 +24,12 @@ function [ cart_frame, res_x, res_y ] = polarToCart( polar_frame, window_start, 
     y0 = -max_range*sin(alpha);
     y_span = -2*y0;
     
-    y_scale = y_span / width;
-    height = round(x_span / y_scale);
-    x_scale = x_span / height;
+    y_scale = y_span ./ width;
+    height = round(x_span ./ y_scale);
+    x_scale = x_span ./ height;
 
-    res_x = height/x_span; % px/m (invert to obtain size of each pixel)
-    res_y = -width/y_span; % px/m 
+    res_x = height./x_span; % px/m (invert to obtain size of each pixel)
+    res_y = -width./y_span; % px/m 
     
     cart_frame = zeros(width, height);
     
