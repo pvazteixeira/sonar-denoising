@@ -36,39 +36,38 @@ while true
         message = hauv.didson_t(msg.data);    % got a new message
         
         % time ( [ Y M D H M S ] )
-        data.time{message_count} = [ typecast(message.m_nYear, 'int32'), ...
-                                     typecast(message.m_nMonth, 'int32'), ...
-                                     typecast(message.m_nDay, 'int32'), ...
-                                     typecast(message.m_nHour, 'int32'), ...
-                                     typecast(message.m_nMinute, 'int32'), ...
-                                     typecast(message.m_nSecond, 'int32')];
-        data.u_time{message_count} = typecast(message.m_dVehicleTime, 'double');
+        data.time{message_count} = [ message.m_nYear, ...
+                                     message.m_nMonth, ...
+                                     message.m_nDay, ...
+                                     message.m_nHour, ...
+                                     message.m_nMinute, ...
+                                     message.m_nSecond];
+        data.u_time{message_count} = message.m_dVehicleTime;
                                  
         % receiver gain
-        data.gain{message_count} = typecast(message.m_nReceiverGain, 'int32');
-        
+        data.gain{message_count} = message.m_nReceiverGain;
                                  
         % frame data
         serialized_image_data = typecast(message.m_cData, 'uint8');
         data.frame{message_count} = flip(reshape(serialized_image_data, 96, 512)'); % deserialize & store
-        data.window_start{message_count} = 0.375*typecast(message.m_nWindowStart,'int32');       
-        data.window_length{message_count} = 1.125*(2^(typecast(message.m_nWindowStart,'int32')));
+        data.window_start{message_count} = 0.375*message.m_nWindowStart;       
+        data.window_length{message_count} = 1.125*(power(2,(message.m_nWindowStart)));
         
         % pose data
-        x = typecast(message.m_fSonarXOffset, 'double');
-        y = typecast(message.m_fSonarYOffset, 'double');
-        z = typecast(message.m_fSonarZOffset, 'double');
-        yaw = deg2rad(typecast(message.m_fSonarPan, 'double') + typecast(message.m_fSonarPanOffset, 'double'));
-        pitch = deg2rad(typecast(message.m_fSonarTilt, 'double') + typecast(message.m_fSonarTiltOffset, 'double'));
-        roll = deg2rad(typecast(message.m_fSonarRoll, 'double') + typecast(message.m_fSonarRollOffset, 'double'));
+        x = message.m_fSonarXOffset;
+        y = message.m_fSonarYOffset;
+        z = message.m_fSonarZOffset;
+        yaw = deg2rad(message.m_fSonarPan + message.m_fSonarPanOffset);
+        pitch = deg2rad(message.m_fSonarTilt + message.m_fSonarTiltOffset);
+        roll = deg2rad(message.m_fSonarRoll + message.m_fSonarRollOffset);
         data.sonar_pose{message_count} = [x; y; z; yaw; pitch; roll;];
         
-        x = typecast(message.m_fSonarX, 'double');
-        y = typecast(message.m_fSonarY, 'double');
-        z = typecast(message.m_fSonarZ, 'double');
-        yaw = typecast(message.m_fHeading, 'double');
-        pitch = typecast(message.m_fPitch, 'double');
-        roll = typecast(message.m_fRoll, 'double');
+        x = message.m_fSonarX;
+        y = message.m_fSonarY;
+        z = message.m_fSonarZ;
+        yaw = message.m_fHeading;
+        pitch = message.m_fPitch;
+        roll = message.m_fRoll;
         data.vehicle_pose{message_count} = [x; y; z; yaw; pitch; roll;];
         
         if ( live_view )
