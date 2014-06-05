@@ -23,18 +23,17 @@ data = data.data;
 % data.frame - the sonar data
 % data.gain - the sonar gain used for a particular frame
 
-
 message_count = size(data.vehicle_pose,2);
 
 pose = cell2mat(data.vehicle_pose); % collapse onto an array.
 
-
+PSF = zeros(96, 96, message_count);
 
 figure();
 for i=1:message_count;
     tic
     % position
-    subplot(1,5,1:2);
+    subplot(1,6,1:2);
     plot3(pose(1,1:i), pose(2,1:i), -pose(3,1:i),'-b.');
     axis equal;
     xlabel('x [m]');
@@ -45,7 +44,7 @@ for i=1:message_count;
     frame_polar = double(data.frame{i})./255;
     
     % sonar - polar
-    subplot(1,5,3);
+    subplot(1,6,3);
     imshow(frame_polar);
     xlabel('Azimuth');
     ylabel('Range');   
@@ -54,19 +53,41 @@ for i=1:message_count;
     % sonar - cartesian
     [frame_cart, rx, ry] = polarToCart(flipud(frame_polar), data.window_start{i}, data.window_length{i}, 300);
     frame_cart = fliplr(rot90(frame_cart));
-    subplot(1,5,4);
+    subplot(1,6,4);
     imshow(frame_cart);
     xlabel('x');
     ylabel('y');   
     title('Sonar (Cartesian)');
-    
-    % sonar (deblurred)
+        
+    % sonar (deblurred, known PSF)
+    %{
     G = green_cart(35, 1/rx, 1/ry);
     frame_cart_d = deconvreg(frame_cart, G);
     subplot(1,5,5);
     imshow(frame_cart_d);
     %title('Sonar (deblurred)');
+    %}
+    
+    % sonar (deblurred, unknown PSF);
+    %
+    G = ones(96,96);
+    %G = 0.5* green_cart(35, 1/rx, 1/ry) + 0.5*ones(36);
+    [frame_cart_d, G] = deconvblind(frame_cart,G,5);
+    PSF(:,:,i) = G;
+    subplot(1,6,5);
+    imshow(frame_cart_d);
+    subplot(1,6,6);
+    m = max(max(G));
+    imshow(G./m);
+    title(['Normalized PSF (max = ',num2str(m),')']);
+    
+    %}
     
     drawnow;
     toc
 end
+
+% compute mean PSF
+MPSF = mean(PSF,3);
+figure()
+imshow(MPSF);

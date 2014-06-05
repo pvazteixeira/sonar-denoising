@@ -33,3 +33,8 @@ title('Original')
 subplot(1,2,2);
 imshow(cart_frame_d);
 title('Deconvolved');
+
+%% Test PSF
+autoframe = deconvreg(G, G);
+figure(3)
+imshow(autoframe);

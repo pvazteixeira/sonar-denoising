@@ -1,4 +1,4 @@
-% LCM_TO_MAT.M A function to convert DIDSON data to a MATLAB-friendly format
+% DIDSON_LCM_TO_MAT.M A function to convert DIDSON data to a MATLAB-friendly format
 % 
 % Pedro Vaz Teixeira (PVT), May 2014
 % pvt@mit.edu
