@@ -1,23 +1,45 @@
 lc = lcm.lcm.LCM.getSingleton();
 aggregator = lcm.lcm.MessageAggregator();
 
-lc.subscribe('HAUV_RAW_PING', aggregator);    % subscribe to didson stuff
+lc.subscribe('RAW_PING', aggregator);    % subscribe to 3DFLS
 
 close all;
+clc;
 
 while true
     millis_to_wait = 10;
     msg = aggregator.getNextMessage(millis_to_wait);
     if ~isempty(msg) > 0
-        % got one!
+%         disp('received frame!');
         
-        disp('received frame!');
-        %{
-        m = hauv.didson_t(msg.data);
-        serializedImageData = typecast(m.m_cData, 'uint8');
+        m = hauv.raw_ping_t(msg.data);
+                
+        serializedImageData = typecast(m.depth_image, 'uint16');
+        serializedImageData = double(serializedImageData)./double(intmax('uint16'));
+%         disp(['ping number: ', num2str(m.ping_number)]);
+
         % deserialize (duh)
-        frame = flip(reshape(serializedImageData, 96, 512)');
-               
+        frame = im2double(flip(reshape(serializedImageData, m.width, m.height)'));
+        
+%         delta_r = (m.range_stop - m.range_start )/ m.height;
+%         delta_a = 28/135; % confirm fov
+        
+        % hackish: assumes beams are sent in order (seems to hold, but
+        % ugly)
+        beam_number =  1+mod(m.ping_number,3);
+        
+        subplot(1, 3, beam_number);
+        
+        imshow(255*frame);
+%         set(gca, 'XTick', -14:20*delta_a:14, 'YTick', m.range_start:100*delta_r:m.range_stop);
+%         set(gca,'XTickLabel','');
+%         set(gca,'YTickLabel','');
+        ylabel('Range [m]');
+        xlabel('Angle');
+        title(['Beam ',num2str(1+mod(m.ping_number,3))]);
+        drawnow;
+
+        %{       
         beam_intensity = sum(frame,1)/512;
         bin_intensity = sum(frame,2)/96;
         
