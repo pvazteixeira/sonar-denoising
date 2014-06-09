@@ -19,7 +19,7 @@ alpha = 0.945;  % 1.8MHz, 10m depth, 15C, ph 8, 35ppt salinity
 
 r = 2.5:0.1:9;      %    
 h_a = 2*alpha.*r;   % absorption losses
-h_g = 20*log(r);    % transmission losses
+h_g = 20*log(r.^2); % transmission losses
 
 plot(r, h_a, 'r')
 hold on
@@ -42,14 +42,26 @@ imshow(polar_frame);
 subplot(1,4,2)
 imshow(fliplr(cart_frame'))
 
+polar_frame2 = polar_frame;
+
 for i=1:512
     r = 2.5 + (6.5/512)*i;  % not sure these are the values for the test frame
     % unsure about formula - not sure about the intensity scale/value
-    polar_frame(i,:) = (255*polar_frame(i,:) - (2*alpha*r)*ones(1,96) - 20*log(r^2))./255;
+    polar_frame2(i,:) = (255*polar_frame2(i,:) - (2*alpha*r)*ones(1,96) - 20*log(r^2))./255;
 end
 subplot(1,4,3)
-imshow(polar_frame)
+imshow(polar_frame2)
 
-[cart_frame, ~, ~] = polarToCart(polar_frame, 2.5, 9, 500);
+[cart_frame, ~, ~] = polarToCart(polar_frame2, 2.5, 9, 500);
 subplot(1,4,4)
 imshow(fliplr(cart_frame'))
+
+%% stand-alone enhancement function test
+
+figure()
+eframe = enhance(polar_frame, 2.5,  9);
+imshow(eframe)
+
+J = histeq(cart_frame);
+figure();
+imshow(J);
