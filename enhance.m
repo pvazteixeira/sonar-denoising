@@ -21,7 +21,7 @@ H = 2*alpha.*r + 20*log(r.^2);
 
 % subtract transmission loss per each range bin.
 for i=1:512;
-    enhanced_polar_frame(i,:) = (255*polar_frame(i,:) - H(i)*ones(1,96))/255;
+    enhanced_polar_frame(i,:) = max(((255*polar_frame(i,:) - H(i)*ones(1,96))/255), zeros(1,96));
 end
 
 %% cross-talk

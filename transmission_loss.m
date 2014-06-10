@@ -28,19 +28,26 @@ plot(r, h_a + h_g, 'k')
 legend('absorption', 'geometric', 'total', 'Location', 'Southeast')
 ylabel('Transmission loss [dB re 1m]')
 xlabel('Range [m]')
-title(['Transmission losses (\alpha=',num2str(alpha),')']);
+title(['Transmission losses (\alpha=',num2str(alpha),'dB(re 1m)/m)']);
 
 grid on
 
 %% application to didson data
 polar_frame = flipud(im2double(imread('./data/frame.bmp')));
 figure();
+
 subplot(1,4,1);
 imshow(polar_frame);
+xlabel('Azimuth');
+ylabel('Range');
+title('Original/polar');
 
 [cart_frame, ~, ~] = polarToCart(polar_frame, 2.5, 9, 500);
 subplot(1,4,2)
 imshow(fliplr(cart_frame'))
+xlabel('y')
+ylabel('x')
+title('Original/cart.')
 
 polar_frame2 = polar_frame;
 
@@ -51,16 +58,96 @@ for i=1:512
 end
 subplot(1,4,3)
 imshow(polar_frame2)
+xlabel('Azimuth');
+ylabel('Range');
+title('Enhanced/polar');
 
 [cart_frame, ~, ~] = polarToCart(polar_frame2, 2.5, 9, 500);
 subplot(1,4,4)
 imshow(fliplr(cart_frame'))
+xlabel('y')
+ylabel('x')
+title('Enhanced/cart');
+
+suptitle('Transmission loss compensation');
+
 
 %% stand-alone enhancement function test
 
 figure()
 eframe = enhance(polar_frame, 2.5,  9);
 imshow(eframe)
+title('Transmission loss compensation - stand-alone function');
+
+
+%% blind convolution
+PSF = ones(96,96);
+[edframe, PSF] = deconvblind(eframe, PSF, 20);
+figure();
+
+subplot(1,4,1)
+imshow(polar_frame)
+title('Original');
+
+subplot(1,4,2)
+imshow(eframe)
+title('Enhanced');
+
+subplot(1,4,3)
+imshow(edframe)
+title('Deconvolved');
+
+subplot(1,4,4)
+imshow(100*PSF)
+title('PSF estimate');
+
+suptitle('Blind deconvolution (polar)');
+
+
+%% deconvolution on enhanced image
+[cart_frame, rx, ry] = polarToCart(eframe, 2.5, 9, 500);
+G = green_cart(95, 1/rx, 1/ry);
+cart_frame_d = deconvreg(cart_frame, G);
+figure()
+
+subplot(1,2,1)
+imshow(cart_frame)
+title('Enhanced/cart');
+
+subplot(1,2,2)
+imshow(cart_frame_d)
+title('Enhanced+deconv./cart');
+
+suptitle('Reg. deconvolution (cart.)');
+
+
+%% range bin energy content comparison (original vs enhanced)
+figure()
+subplot(1,4,1);
+imshow(polar_frame);    % original
+eo = zeros(512,1);
+for i = 1:512
+    eo(i) = mean(polar_frame(i,:));
+end
+subplot(1,4,2)
+plot(eo, 512:-1:1)
+xlim([0 1])
+ylim([1 512])
+
+subplot(1,4,3);
+imshow(eframe);
+ee = zeros(512,1);
+for i = 1:512
+    ee(i) = mean(eframe(i,:));
+end
+subplot(1,4,4)
+plot(ee, 512:-1:1)
+xlim([0 1])
+ylim([1 512])
+
+suptitle('Average bin intensity')
+
+%% miscellaneous
 
 J = histeq(cart_frame);
 figure();
