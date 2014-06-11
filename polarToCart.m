@@ -28,8 +28,8 @@ function [ cart_frame, res_x, res_y ] = polarToCart( polar_frame, window_start, 
     height = round(x_span ./ y_scale);
     x_scale = x_span ./ height;
 
-    res_x = height./x_span; % px/m (invert to obtain size of each pixel)
-    res_y = -width./y_span; % px/m 
+    res_x = abs(height./x_span); % px/m (invert to obtain size of each pixel)
+    res_y = abs(-width./y_span); % px/m 
     
     cart_frame = zeros(width, height);
     

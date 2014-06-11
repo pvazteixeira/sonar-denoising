@@ -46,19 +46,40 @@ for i=1:message_count;
     frame_polar = flipud(double(data.frame{i})./255);
     
     % sonar - polar, raw
+    %
+    subplot(1,7,2);
+    imshow(frame_polar);
+    xlabel('Azimuth');
+    ylabel('Range');   
+    title('Sonar (polar, raw)');
+    %}
+    
+    % sonar - polar, raw, normalized
+    %
     subplot(1,7,3);
     imshow((1/max(max(frame_polar)))*frame_polar);
     xlabel('Azimuth');
     ylabel('Range');   
     title('Sonar (polar, raw)*');
+    %}
     
     % sonar - polar, enhanced
+    %
     frame_polar_enhanced = enhance(frame_polar, data.window_start{i}, data.window_start{i} + data.window_length{i});
+    subplot(1,7,4);
+    imshow(frame_polar_enhanced);
+    title('Sonar (polar, enhanced)');
+    %}
+    
+    % sonar - polar, enhanced, normalized
+    %
     subplot(1,7,5);
     imshow((1/max(max(frame_polar_enhanced)))*frame_polar_enhanced);
-
+    title('Sonar (polar, enhanced)*');
+    %}
+    
     % sonar - average bin intensity
-    %
+    %{
     fpbi = zeros(512,1);
     fpbid = zeros(512,1);
     fpebi = zeros(512,1);
