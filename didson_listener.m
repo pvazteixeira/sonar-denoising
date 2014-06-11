@@ -1,3 +1,8 @@
+% DIDSON_LISTENER.M A simple script to view DIDSON data from lcm logs
+%
+%   Pedro Vaz Teixeira, June 2014
+%   pvt@mit.edu
+
 lc = lcm.lcm.LCM.getSingleton();
 aggregator = lcm.lcm.MessageAggregator();
 

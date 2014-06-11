@@ -1,3 +1,8 @@
+% FLS_LISTENER.M A simple script to view 3DFLS data from lcm logs
+%
+%   Pedro Vaz Teixeira, June 2014
+%   pvt@mit.edu
+
 lc = lcm.lcm.LCM.getSingleton();
 aggregator = lcm.lcm.MessageAggregator();
 
@@ -12,6 +17,7 @@ while true
     if ~isempty(msg) > 0
 %         disp('received frame!');
         
+
         m = hauv.raw_ping_t(msg.data);
                 
         serializedImageData = typecast(m.depth_image, 'uint16');

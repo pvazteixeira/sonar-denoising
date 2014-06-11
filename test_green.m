@@ -1,5 +1,5 @@
-%TEST_GREEN.M Test case for deconvolution of SONAR imagery using Green's
-%function.
+% TEST_GREEN.M Test case for deconvolution of SONAR imagery using Green's
+% function.
 %
 % Pedro Vaz Teixeira, June 2014
 % pvt@mit.edu
