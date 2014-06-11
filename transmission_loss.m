@@ -80,7 +80,7 @@ imshow(eframe)
 title('Transmission loss compensation - stand-alone function');
 
 
-%% blind convolution
+%% blind deconvolution
 PSF = ones(96,96);
 [edframe, PSF] = deconvblind(eframe, PSF, 20);
 figure();
@@ -98,8 +98,8 @@ imshow(edframe)
 title('Deconvolved');
 
 subplot(1,4,4)
-imshow(100*PSF)
-title('PSF estimate');
+imshow(250*PSF)
+title('PSF estimate (x250)');
 
 suptitle('Blind deconvolution (polar)');
 
@@ -123,27 +123,34 @@ suptitle('Reg. deconvolution (cart.)');
 
 %% range bin energy content comparison (original vs enhanced)
 figure()
-subplot(1,4,1);
+subplot(1,5,1);
 imshow(polar_frame);    % original
 eo = zeros(512,1);
 for i = 1:512
     eo(i) = mean(polar_frame(i,:));
 end
-subplot(1,4,2)
+subplot(1,5,2)
 plot(eo, 512:-1:1)
 xlim([0 1])
 ylim([1 512])
 
-subplot(1,4,3);
+subplot(1,5,3);
 imshow(eframe);
 ee = zeros(512,1);
 for i = 1:512
     ee(i) = mean(eframe(i,:));
 end
-subplot(1,4,4)
+subplot(1,5,4)
 plot(ee, 512:-1:1)
+hold on;
+k = 1/max(max(eframe));
+plot(k*ee, 512:-1:1,'r')
 xlim([0 1])
 ylim([1 512])
+
+subplot(1,5,5);
+imshow(k*eframe);
+title('amplified')
 
 suptitle('Average bin intensity')
 
