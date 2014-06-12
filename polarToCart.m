@@ -7,8 +7,6 @@ function [ cart_frame, res_x, res_y ] = polarToCart( polar_frame, window_start, 
 %   Pedro Vaz Teixeira, May 2014
 %   pvt@mit.edu
 
-    %global n_beams beam_width n_bins bin_width min_range max_range;
-
     n_beams = 96;
     beam_width = deg2rad(0.3);
     

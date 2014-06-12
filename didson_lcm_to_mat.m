@@ -25,7 +25,6 @@ data.gain = [];
 
 message_count = 0;
 
-
 live_view = true;
 
 while true
@@ -86,8 +85,6 @@ while true
 
                 drawnow;
             end
-        end
-             
+        end             
     end
 end
-

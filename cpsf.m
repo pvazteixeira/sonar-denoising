@@ -5,11 +5,13 @@ function [ psf ] = cpsf( N )
 %   and receiving from 12 transducers for each ping cycle) to build a 
 %   single complete frame." (from Sound Metrics Support)
 %
+%   N = number of beams to consider to each side;
+%
 %   Pedro Vaz Teixeira, June 2014
 %   pvt@mit.edu
    
-    % number of beams to consider to each side;
-    %N = 1;
+    
+
     psf = zeros(1,1+2*N*12);
     psf(1:12:end) = 1;
     
@@ -19,15 +21,6 @@ function [ psf ] = cpsf( N )
         psf(N*12+1 - i*12) = alpha^i;
         psf(N*12+1 + i*12) = alpha^i;
     end
-    % 
-    %ix = -48:48;
-    %iy = -48:48;
-    
-    %[x,y] = meshgrid(ix, iy);
-    % a 2D sinc should model the correlation
-    % caused by the 8 firings/image (x part)
-    % and along-range returns (y part)
-    %psf = abs(sinc(x)*sinc(y));
 
 end
 
