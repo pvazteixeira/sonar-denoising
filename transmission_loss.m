@@ -17,9 +17,13 @@ figure();
 alpha = 0.945;  % 1.8MHz, 10m depth, 15C, ph 8, 35ppt salinity
                 % http://resource.npl.co.uk/acoustics/techguides/seaabsorption/
 
+% geometric loss coefficient
+N = 1; % cyclindrical
+%N = 2; % spherical
+                
 r = 2.5:0.1:9;      %    
 h_a = 2*alpha.*r;   % absorption losses
-h_g = 20*log(r.^2); % transmission losses
+h_g = 20*log(r.^N); % geometric losses
 
 plot(r, h_a, 'r')
 hold on
@@ -28,7 +32,7 @@ plot(r, h_a + h_g, 'k')
 legend('absorption', 'geometric', 'total', 'Location', 'Southeast')
 ylabel('Transmission loss [dB re 1m]')
 xlabel('Range [m]')
-title(['Transmission losses (\alpha=',num2str(alpha),'dB(re 1m)/m)']);
+title(['Transmission losses (\alpha=',num2str(alpha),'dB(re 1m)/m, N=',num2str(N),')']);
 
 grid on
 
@@ -54,7 +58,7 @@ polar_frame2 = polar_frame;
 for i=1:512
     r = 2.5 + (6.5/512)*i;  % not sure these are the values for the test frame
     % unsure about formula - not sure about the intensity scale/value
-    polar_frame2(i,:) = (255*polar_frame2(i,:) - (2*alpha*r)*ones(1,96) - 20*log(r^2))./255;
+    polar_frame2(i,:) = (255*polar_frame2(i,:) - (2*alpha*r)*ones(1,96) - N*20*log(r))./255;
 end
 subplot(1,4,3)
 imshow(polar_frame2)
@@ -153,9 +157,3 @@ imshow(k*eframe);
 title('amplified')
 
 suptitle('Average bin intensity')
-
-%% miscellaneous
-
-J = histeq(cart_frame);
-figure();
-imshow(J);
