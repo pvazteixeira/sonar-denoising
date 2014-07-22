@@ -29,12 +29,15 @@ pose = cell2mat(data.vehicle_pose); % collapse onto an array.
 
 PSF = zeros(96, 96, message_count);
 
+plot_rows = 1;
+plot_columns = 8;
+
 figure();
 for i=1:message_count;
     tic
     % position
     %{
-    subplot(1,7,1:2);
+    subplot(plot_rows,plot_columns,1:2);
     plot3(pose(1,1:i), pose(2,1:i), -pose(3,1:i),'-b.');
     axis equal;
     xlabel('x [m]');
@@ -45,9 +48,11 @@ for i=1:message_count;
     
     frame_polar = flipud(double(data.frame{i})./255);
     
+    %% display raw data
+    
     % sonar - polar, raw
     %
-    subplot(1,7,2);
+    subplot(plot_rows,plot_columns,2);
     imshow(frame_polar);
     xlabel('Azimuth');
     ylabel('Range');   
@@ -56,28 +61,58 @@ for i=1:message_count;
     
     % sonar - polar, raw, normalized
     %
-    subplot(1,7,3);
+    subplot(plot_rows,plot_columns,3);
     imshow((1/max(max(frame_polar)))*frame_polar);
     xlabel('Azimuth');
     ylabel('Range');   
     title('Sonar (polar, raw)*');
     %}
     
+    %% enhance.m tests
+    
     % sonar - polar, enhanced
     %
     frame_polar_enhanced = enhance(frame_polar, data.window_start{i}, data.window_start{i} + data.window_length{i});
-    subplot(1,7,4);
+    subplot(plot_rows,plot_columns,4);
     imshow(frame_polar_enhanced);
     title('Sonar (polar, enhanced)');
     %}
     
     % sonar - polar, enhanced, normalized
     %
-    subplot(1,7,5);
+    subplot(plot_rows,plot_columns,5);
     imshow((1/max(max(frame_polar_enhanced)))*frame_polar_enhanced);
     title('Sonar (polar, enhanced)*');
     %}
     
+    
+    %% Wiener deconvolution
+    
+    PSF =  zeros(13,96);
+    %PSF(7,:) = 18*ones(1,96);
+    PSF(7,[1 9 17 25 33 41 49 57 65 73 81 89]) =[ 18 18 18 18 18 18 70 18 18 18 18 18];
+    %PSF(7,49) = 70;
+    %PSF(7,[1 9 17 25 33 41 49 57 65 73 81 89]) =[ 30 24 24 27 32 40 70 40 32 27 24 24];
+    PSF = (1/sum(sum(PSF)))*PSF;
+% disp(sum(sum(PSF)));
+% subplot(1,N_plots,2); imshow(50*PSF)
+% title('PSF');
+
+% 2.2 - restore assuming no noise
+estimated_nsr = 0;
+wnr2 = deconvwnr(frame_polar, PSF, estimated_nsr);
+subplot(plot_rows,plot_columns,6); imshow(wnr2)
+title('Restoration using NSR = 0')
+       
+% 2.3 - restore with noise      
+%estimated_nsr = var(frame_polar(:)); % INCORRECT; this is total variance
+estimated_nsr = 0.01;
+wnr3 = deconvwnr(frame_polar, PSF, estimated_nsr);
+subplot(plot_rows,plot_columns,7);  imshow(wnr3)
+title(['Restoration using NSR=',num2str(estimated_nsr)]);
+
+subplot(plot_rows,plot_columns,8);  
+imshow((1/max(max(wnr3)))*wnr3);
     % sonar - average bin intensity
     %{
     fpbi = zeros(512,1);
@@ -93,7 +128,7 @@ for i=1:message_count;
     s = mean(fpebi);
     dev = sqrt(var(fpebi));
         
-    subplot(1,7,4);
+    subplot(plot_rows,plot_columns,4);
     %plot(fpbi, 512:-1:1, 'b');
     hold on
     %plot(fpebi+fpebid, 512:-1:1, 'r--');
@@ -109,13 +144,14 @@ for i=1:message_count;
     ylim([1 512])
     %}
     
+    %% blind deconvolution
     % sonar - blind deconvolution
     %{
     [frame_polar_enhanced_deconv, PSF] = deconvblind(frame_polar_enhanced, ones(96), 20);
-    subplot(1,7,6)
+    subplot(plot_rows,plot_columns,6)
     imshow(frame_polar_enhanced_deconv);
     
-    subplot(1,7,7)
+    subplot(plot_rows,plot_columns,7)
     imshow(100*PSF);
     %}
     
