@@ -15,8 +15,8 @@ PSF = fspecial('gaussian',96);
 while true
     millis_to_wait = 10;
     msg = aggregator.getNextMessage(millis_to_wait);
+
     if ~isempty(msg) > 0
-        % got one!
         %disp('received frame!');
         m = hauv.didson_t(msg.data);
         serializedImageData = typecast(m.m_cData, 'uint8');
@@ -26,7 +26,7 @@ while true
         beam_intensity = sum(frame,1)/512;
         bin_intensity = sum(frame,2)/96;
         
-        % Intensity/beam
+        % intensity/beam
         subplot(1,6,1)
         plot(beam_intensity,'b');
         hold on

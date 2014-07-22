@@ -5,6 +5,8 @@ function [ PSF ] = cpsf( )
 %   and receiving from 12 transducers for each ping cycle) to build a 
 %   single complete frame." (from Sound Metrics Support)
 %
+%   N = number of beams to consider to each side;
+%
 %   Pedro Vaz Teixeira, June 2014
 %   pvt@mit.edu
 
@@ -35,7 +37,7 @@ figure, imshow(50*PSF)
     % and along-range returns (y part)
     %psf = abs(sinc(x)*sinc(y));
     
-    
+
 
 end
 
