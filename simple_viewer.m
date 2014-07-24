@@ -7,7 +7,38 @@ clc;
 close all;
 
 %data = open('log-2014-03-05.01.mat');
-data = open('log-2014-03-05.01-short.mat');
+%data = open('log-2014-03-05.01-short.mat');
+
+%data = open('didson-air.mat'); % somwhat useful to get noise properties
+
+% NO TARGETS
+%data = open('didson-tank-wall.mat');
+data = open('didson-tank-wall-angle.mat');
+%data = open('didson-tank-corner.mat');
+%didson-tank-supposedly-nothing
+%didson-tank-supposedly-nothing-rust-pump-off
+%didson-tank-supposedly-nothing-rust-pump-off-2
+%didson-tank-wall-nothing-3
+%didson-tank-wall-2
+
+
+% Fishing line
+%data = open('didson-tank-wall-fishing-line.mat');
+%data = open('didson-tank-wall-fishing-line-moving.mat');
+
+% Tubes & rods
+%data = open('didson-tank-wall-hollow-tube-tilted.mat');
+%data = open('didson-tank-wall-aluminum-rod-moving.mat');
+%didson-tank-wall-aluminum-rod
+%didson-tank-wall-thin-hollow-al-rod
+%didson-tank-wall-thin-hollow-al-rod-2
+
+% TUNA CAN!
+%data = open('didson-tank-wall-tuna-can.mat');
+%data = open('didson-tank-wall-tuna-can-moving-can.mat');
+%data = open('didson-tank-wall-tuna-can-moving-hauv.mat');
+
+
 data = data.data;
 
 % DATA FIELDS
@@ -30,7 +61,7 @@ pose = cell2mat(data.vehicle_pose); % collapse onto an array.
 PSF = zeros(96, 96, message_count);
 
 plot_rows = 1;
-plot_columns = 8;
+plot_columns = 5;
 
 figure();
 for i=1:message_count;
@@ -52,7 +83,7 @@ for i=1:message_count;
     
     % sonar - polar, raw
     %
-    subplot(plot_rows,plot_columns,2);
+    subplot(plot_rows,plot_columns,1);
     imshow(frame_polar);
     xlabel('Azimuth');
     ylabel('Range');   
@@ -61,26 +92,26 @@ for i=1:message_count;
     
     % sonar - polar, raw, normalized
     %
-    subplot(plot_rows,plot_columns,3);
+    subplot(plot_rows,plot_columns,2);
     imshow((1/max(max(frame_polar)))*frame_polar);
     xlabel('Azimuth');
     ylabel('Range');   
     title('Sonar (polar, raw)*');
     %}
     
-    %% enhance.m tests
+    %% enhance.m tests (mostly transmission loss)
     
     % sonar - polar, enhanced
-    %
+    %{
     frame_polar_enhanced = enhance(frame_polar, data.window_start{i}, data.window_start{i} + data.window_length{i});
-    subplot(plot_rows,plot_columns,4);
+    subplot(plot_rows,plot_columns,3);
     imshow(frame_polar_enhanced);
     title('Sonar (polar, enhanced)');
     %}
     
     % sonar - polar, enhanced, normalized
-    %
-    subplot(plot_rows,plot_columns,5);
+    %{
+    subplot(plot_rows,plot_columns,4);
     imshow((1/max(max(frame_polar_enhanced)))*frame_polar_enhanced);
     title('Sonar (polar, enhanced)*');
     %}
@@ -89,30 +120,29 @@ for i=1:message_count;
     %% Wiener deconvolution
     
     PSF =  zeros(13,96);
-    %PSF(7,:) = 18*ones(1,96);
     PSF(7,[1 9 17 25 33 41 49 57 65 73 81 89]) =[ 18 18 18 18 18 18 70 18 18 18 18 18];
-    %PSF(7,49) = 70;
-    %PSF(7,[1 9 17 25 33 41 49 57 65 73 81 89]) =[ 30 24 24 27 32 40 70 40 32 27 24 24];
     PSF = (1/sum(sum(PSF)))*PSF;
-% disp(sum(sum(PSF)));
-% subplot(1,N_plots,2); imshow(50*PSF)
-% title('PSF');
+    % subplot(1,N_plots,2); imshow(50*PSF)
+    % title('PSF');
 
-% 2.2 - restore assuming no noise
-estimated_nsr = 0;
-wnr2 = deconvwnr(frame_polar, PSF, estimated_nsr);
-subplot(plot_rows,plot_columns,6); imshow(wnr2)
-title('Restoration using NSR = 0')
+    % restore assuming no noise
+    estimated_nsr = 0;
+    wnr2 = deconvwnr(frame_polar, PSF, estimated_nsr);
+    subplot(plot_rows,plot_columns,3); imshow(wnr2)
+    title('Restoration using NSR = 0')
        
-% 2.3 - restore with noise      
-%estimated_nsr = var(frame_polar(:)); % INCORRECT; this is total variance
-estimated_nsr = 0.01;
-wnr3 = deconvwnr(frame_polar, PSF, estimated_nsr);
-subplot(plot_rows,plot_columns,7);  imshow(wnr3)
-title(['Restoration using NSR=',num2str(estimated_nsr)]);
+    % restore with noise
+    estimated_nsr = 0.0018; % replace with experimentally determined value
+    wnr3 = deconvwnr(frame_polar, PSF, estimated_nsr);
+    subplot(plot_rows,plot_columns,4);  imshow(wnr3)
+    title(['Restoration using NSR=',num2str(estimated_nsr)]);
 
-subplot(plot_rows,plot_columns,8);  
-imshow((1/max(max(wnr3)))*wnr3);
+    % normalize
+    subplot(plot_rows,plot_columns,5);
+    imshow((1/max(max(wnr3)))*wnr3);
+    title(['Restoration using NSR=',num2str(estimated_nsr),'*']);
+    
+    %% energy content
     % sonar - average bin intensity
     %{
     fpbi = zeros(512,1);
