@@ -13,7 +13,7 @@ close all;
 
 % NO TARGETS
 %data = open('didson-tank-wall.mat');
-data = open('didson-tank-wall-angle.mat');
+%data = open('didson-tank-wall-angle.mat');
 %data = open('didson-tank-corner.mat');
 %didson-tank-supposedly-nothing
 %didson-tank-supposedly-nothing-rust-pump-off
@@ -30,8 +30,9 @@ data = open('didson-tank-wall-angle.mat');
 %data = open('didson-tank-wall-hollow-tube-tilted.mat');
 %data = open('didson-tank-wall-aluminum-rod-moving.mat');
 %didson-tank-wall-aluminum-rod
-%didson-tank-wall-thin-hollow-al-rod
-%didson-tank-wall-thin-hollow-al-rod-2
+%data = open('didson-tank-wall-thin-hollow-al-rod.mat');
+%data = open('didson-tank-wall-thin-hollow-al-rod-2.mat');
+data = open('didson-tank-wall-thin-hollow-al-rod-moving.mat');
 
 % TUNA CAN!
 %data = open('didson-tank-wall-tuna-can.mat');
@@ -61,11 +62,13 @@ pose = cell2mat(data.vehicle_pose); % collapse onto an array.
 PSF = zeros(96, 96, message_count);
 
 plot_rows = 1;
-plot_columns = 5;
+plot_columns = 9;
+
 
 figure();
 for i=1:message_count;
     tic
+    num_plot = 1;
     % position
     %{
     subplot(plot_rows,plot_columns,1:2);
@@ -83,7 +86,8 @@ for i=1:message_count;
     
     % sonar - polar, raw
     %
-    subplot(plot_rows,plot_columns,1);
+    subplot(plot_rows,plot_columns,num_plot);
+    num_plot = num_plot+1;
     imshow(frame_polar);
     xlabel('Azimuth');
     ylabel('Range');   
@@ -92,7 +96,8 @@ for i=1:message_count;
     
     % sonar - polar, raw, normalized
     %
-    subplot(plot_rows,plot_columns,2);
+    subplot(plot_rows,plot_columns,num_plot);
+    num_plot = num_plot+1;
     imshow((1/max(max(frame_polar)))*frame_polar);
     xlabel('Azimuth');
     ylabel('Range');   
@@ -117,30 +122,91 @@ for i=1:message_count;
     %}
     
     
-    %% Wiener deconvolution
+    %% Wiener deconvolution (single lobe)
+    %{
     
-    PSF =  zeros(13,96);
-    PSF(7,[1 9 17 25 33 41 49 57 65 73 81 89]) =[ 18 18 18 18 18 18 70 18 18 18 18 18];
+    PSF =  zeros(1,96);
+    PSF(1,[1 9 17 25 33 41 49 57 65 73 81 89]) =[ 20 20 20 20 20 20 70 20 20 20 20 20];
     PSF = (1/sum(sum(PSF)))*PSF;
+    
     % subplot(1,N_plots,2); imshow(50*PSF)
     % title('PSF');
 
     % restore assuming no noise
     estimated_nsr = 0;
     wnr2 = deconvwnr(frame_polar, PSF, estimated_nsr);
-    subplot(plot_rows,plot_columns,3); imshow(wnr2)
+    subplot(plot_rows,plot_columns,num_plot);
+    num_plot = num_plot+1;
+    imshow(wnr2)
     title('Restoration using NSR = 0')
        
     % restore with noise
     estimated_nsr = 0.0018; % replace with experimentally determined value
     wnr3 = deconvwnr(frame_polar, PSF, estimated_nsr);
-    subplot(plot_rows,plot_columns,4);  imshow(wnr3)
+    subplot(plot_rows,plot_columns,num_plot);
+    num_plot = num_plot+1;
+    imshow(wnr3)
     title(['Restoration using NSR=',num2str(estimated_nsr)]);
 
     % normalize
-    subplot(plot_rows,plot_columns,5);
-    imshow((1/max(max(wnr3)))*wnr3);
+    subplot(plot_rows,plot_columns,num_plot);
+    num_plot = num_plot+1;
+    wnr3 = (1/max(max(wnr3)))*wnr3;
+    imshow(wnr3);
     title(['Restoration using NSR=',num2str(estimated_nsr),'*']);
+    
+    %}
+    
+    %% Wiener deconvolution (multiple lobes)
+    %{
+    beam = [18,18,18,18,18,18,18,18,24,18,18,18,...
+          18,18,18,18,24,18,18,18,18,18,18,18,...
+          27,18,18,18,18,18,18,18,32,18,18,18,...
+          18,18,18,18,40,18,18,18,28,18,39,18,...
+          70,18,39,18,28,18,18,18,40,18,18,18,...
+          18,18,18,18,32,18,18,18,18,18,18,18,...
+          27,18,18,18,18,18,18,18,24,18,18,18,...
+          18,18,18,18,24,18,18,18,18,18,18,18];
+    %}
+    beam=zeros(1,96);
+      beam(1,[1 9 17 25 33 41 49 57 65 73 81 89]) =[  24 24 24 27 32 40 70 40 32 27 24 24];
+      %beam(2,49) = 60;
+      %pause
+  PSF = (1/sum(sum(beam)))*beam;
+  
+    % restore assuming no noise
+    %{
+    estimated_nsr = 0;
+    wnr4 = deconvwnr(frame_polar, PSF, estimated_nsr);
+    subplot(plot_rows,plot_columns,num_plot);
+    num_plot = num_plot+1;
+    imshow(wnr4)
+    title('Restoration using NSR = 0')
+    %}
+       
+    % restore with noise
+    %
+    estimated_nsr = 0.0018; % replace with experimentally determined value
+    wnr5 = deconvwnr(frame_polar, PSF, estimated_nsr);
+    
+    subplot(plot_rows,plot_columns,num_plot);
+    num_plot = num_plot+1;
+    imshow(wnr5)
+    title(['Restoration using NSR=',num2str(estimated_nsr)]);
+    %}
+
+    % normalize
+    subplot(plot_rows,plot_columns,num_plot);
+    num_plot = num_plot+1;
+    wnr5 = (1/max(max(wnr5)))*wnr5;
+    imshow(wnr5);
+    title(['Restoration using NSR=',num2str(estimated_nsr),'*']);
+  
+    %{
+    subplot(plot_rows,plot_columns,num_plot);
+    num_plot = num_plot+1;
+    imshow(abs(wnr5-wnr3));
+    %}
     
     %% energy content
     % sonar - average bin intensity
@@ -221,6 +287,8 @@ for i=1:message_count;
     %}
     
     suptitle( '(images marked with * are normalized)');
+    
+    plot_columns = num_plot -1 ;
     
     drawnow;
     toc
