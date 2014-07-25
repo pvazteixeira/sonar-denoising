@@ -6,8 +6,8 @@
 clc;
 close all;
 
-%data = open('log-2014-03-05.01.mat');
-%data = open('log-2014-03-05.01-short.mat');
+% Curtiss, March 2014
+data = open('log-2014-03-05.01-short.mat');
 
 %data = open('didson-air.mat'); % somwhat useful to get noise properties
 
@@ -32,7 +32,7 @@ close all;
 %didson-tank-wall-aluminum-rod
 %data = open('didson-tank-wall-thin-hollow-al-rod.mat');
 %data = open('didson-tank-wall-thin-hollow-al-rod-2.mat');
-data = open('didson-tank-wall-thin-hollow-al-rod-moving.mat');
+%data = open('didson-tank-wall-thin-hollow-al-rod-moving.mat');
 
 % TUNA CAN!
 %data = open('didson-tank-wall-tuna-can.mat');
@@ -208,37 +208,57 @@ for i=1:message_count;
     imshow(abs(wnr5-wnr3));
     %}
     
-    %% energy content
+    %% energy content per range
     % sonar - average bin intensity
-    %{
+    %
     fpbi = zeros(512,1);
     fpbid = zeros(512,1);
     fpebi = zeros(512,1);
     fpebid = zeros(512,1);
-    for i = 1:512
-        fpbi(i) = mean(frame_polar(i,:));
-        fpbid(i) = sqrt(var(frame_polar(i,:)));
-        fpebi(i) = mean(frame_polar_enhanced(i,:));
-        fpebid(i) = sqrt(var(frame_polar_enhanced(i,:)));
+    for j = 1:512
+        fpbi(j) = mean(frame_polar(j,:));
+        fpbid(j) = sqrt(var(frame_polar(j,:)));
+        fpebi(j) = mean(wnr5(j,:));
+        fpebid(j) = sqrt(var(wnr5(j,:)));
     end
     s = mean(fpebi);
     dev = sqrt(var(fpebi));
         
-    subplot(plot_rows,plot_columns,4);
+    subplot(plot_rows,plot_columns,num_plot);
+    num_plot = num_plot+1;
     %plot(fpbi, 512:-1:1, 'b');
+    plot(fpbid, 512:-1:1, 'b');
     hold on
+
+    %
     %plot(fpebi+fpebid, 512:-1:1, 'r--');
-    plot(fpebi, 512:-1:1, 'r');
+    %plot(fpebi, 512:-1:1, 'r');
+    plot(fpebid, 512:-1:1, 'r');
+    plot(wnr5(:,48), 512:-1:1, 'k');
     %plot(fpebi-fpebid, 512:-1:1, 'r--');
-    plot(fpebid, 512:-1:1, 'b');
+    %plot(fpebid, 512:-1:1, 'b');
     %plot([s s], [1 512], 'k');
     %plot([s+dev s+dev], [1 512], 'k--');
     %plot(max([s-dev s-dev], [0,0]), [1 512], 'k--');
+    %
     hold off
     
-    %xlim([0 1])
+    xlim([0 1])
     ylim([1 512])
     %}
+    
+    %% energy content per beam
+    
+    abi = zeros(1,96);
+    for j=1:96
+       abi(j) = mean(frame_polar(:,j)); 
+    end
+    
+    subplot(plot_rows,plot_columns,num_plot);
+    num_plot = num_plot+1;
+    plot(1:96, abi);
+    xlim([1 96])
+    ylim([0 1])
     
     %% blind deconvolution
     % sonar - blind deconvolution
