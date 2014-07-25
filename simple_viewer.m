@@ -7,7 +7,7 @@ clc;
 close all;
 
 % Curtiss, March 2014
-data = open('log-2014-03-05.01-short.mat');
+%data = open('log-2014-03-05.01-short.mat');
 
 %data = open('didson-air.mat'); % somwhat useful to get noise properties
 
@@ -24,7 +24,7 @@ data = open('log-2014-03-05.01-short.mat');
 
 % Fishing line
 %data = open('didson-tank-wall-fishing-line.mat');
-%data = open('didson-tank-wall-fishing-line-moving.mat');
+data = open('didson-tank-wall-fishing-line-moving.mat');
 
 % Tubes & rods
 %data = open('didson-tank-wall-hollow-tube-tilted.mat');
@@ -64,7 +64,6 @@ PSF = zeros(96, 96, message_count);
 plot_rows = 1;
 plot_columns = 9;
 
-
 figure();
 for i=1:message_count;
     tic
@@ -85,7 +84,7 @@ for i=1:message_count;
     %% display raw data
     
     % sonar - polar, raw
-    %
+    %{
     subplot(plot_rows,plot_columns,num_plot);
     num_plot = num_plot+1;
     imshow(frame_polar);
@@ -95,7 +94,7 @@ for i=1:message_count;
     %}
     
     % sonar - polar, raw, normalized
-    %
+    %{
     subplot(plot_rows,plot_columns,num_plot);
     num_plot = num_plot+1;
     imshow((1/max(max(frame_polar)))*frame_polar);
@@ -169,10 +168,10 @@ for i=1:message_count;
           18,18,18,18,24,18,18,18,18,18,18,18];
     %}
     beam=zeros(1,96);
-      beam(1,[1 9 17 25 33 41 49 57 65 73 81 89]) =[  24 24 24 27 32 40 70 40 32 27 24 24];
-      %beam(2,49) = 60;
-      %pause
-  PSF = (1/sum(sum(beam)))*beam;
+    beam(1,[1 9 17 25 33 41 49 57 65 73 81 89]) =[  24 24 24 27 32 40 70 40 32 27 24 24];
+    %beam(2,49) = 60;
+    %pause
+    PSF = (1/sum(sum(beam)))*beam;
   
     % restore assuming no noise
     %{
@@ -188,7 +187,7 @@ for i=1:message_count;
     %
     estimated_nsr = 0.0018; % replace with experimentally determined value
     wnr5 = deconvwnr(frame_polar, PSF, estimated_nsr);
-    
+    %{
     subplot(plot_rows,plot_columns,num_plot);
     num_plot = num_plot+1;
     imshow(wnr5)
@@ -196,21 +195,34 @@ for i=1:message_count;
     %}
 
     % normalize
+    wnr5 = (1/max(wnr5(:)))*wnr5;
+    wnr5 = max(frame_polar(:))*wnr5; %correct for same max intensity as the original image
+    %
     subplot(plot_rows,plot_columns,num_plot);
     num_plot = num_plot+1;
-    wnr5 = (1/max(max(wnr5)))*wnr5;
     imshow(wnr5);
     title(['Restoration using NSR=',num2str(estimated_nsr),'*']);
-  
+    %}
+    
     %{
     subplot(plot_rows,plot_columns,num_plot);
     num_plot = num_plot+1;
     imshow(abs(wnr5-wnr3));
     %}
+    %% thresholded image
+    %{
+    %wnr5 = max(frame_polar(:))*wnr5;
+    thr = max(0.5, mean(wnr5(:)) + 3*sqrt(var(wnr5(:))));
+    hits = im2bw(wnr5, thr); % this may fail as we are working with a normalized image!!
+    subplot(plot_rows,plot_columns,num_plot);
+    num_plot = num_plot+1;
+    imshow(hits);
+    %}
+
     
     %% energy content per range
     % sonar - average bin intensity
-    %
+    %{
     fpbi = zeros(512,1);
     fpbid = zeros(512,1);
     fpebi = zeros(512,1);
@@ -248,7 +260,7 @@ for i=1:message_count;
     %}
     
     %% energy content per beam
-    
+    %{
     abi = zeros(1,96);
     for j=1:96
        abi(j) = mean(frame_polar(:,j)); 
@@ -259,6 +271,7 @@ for i=1:message_count;
     plot(1:96, abi);
     xlim([1 96])
     ylim([0 1])
+    %}
     
     %% blind deconvolution
     % sonar - blind deconvolution
@@ -305,6 +318,8 @@ for i=1:message_count;
     title(['Normalized PSF (max = ',num2str(m),')']);
     
     %}
+    
+    %%
     
     suptitle( '(images marked with * are normalized)');
     
