@@ -7,7 +7,7 @@ clc;
 close all;
 
 % Curtiss, March 2014
-%data = open('log-2014-03-05.01-short.mat');
+data = open('log-2014-03-05.01-short.mat');
 
 %data = open('didson-air.mat'); % somwhat useful to get noise properties
 
@@ -24,7 +24,7 @@ close all;
 
 % Fishing line
 %data = open('didson-tank-wall-fishing-line.mat');
-data = open('didson-tank-wall-fishing-line-moving.mat');
+%data = open('didson-tank-wall-fishing-line-moving.mat');
 
 % Tubes & rods
 %data = open('didson-tank-wall-hollow-tube-tilted.mat');
@@ -84,7 +84,7 @@ for i=1:message_count;
     %% display raw data
     
     % sonar - polar, raw
-    %{
+    %
     subplot(plot_rows,plot_columns,num_plot);
     num_plot = num_plot+1;
     imshow(frame_polar);
@@ -185,7 +185,7 @@ for i=1:message_count;
        
     % restore with noise
     %
-    estimated_nsr = 0.0018; % replace with experimentally determined value
+    estimated_nsr = 0.0018; % replace with experimentally determined value (variance)
     wnr5 = deconvwnr(frame_polar, PSF, estimated_nsr);
     %{
     subplot(plot_rows,plot_columns,num_plot);
@@ -209,6 +209,19 @@ for i=1:message_count;
     num_plot = num_plot+1;
     imshow(abs(wnr5-wnr3));
     %}
+    
+    %% cartesian 
+    
+    [cart_frame, rx, ry] = polarToCart(frame_polar, data.window_start{i}, data.window_length{i}, 500);
+    subplot(plot_rows,plot_columns,num_plot);
+    num_plot = num_plot+1;
+    imshow(cart_frame');
+    
+    [cart_frame, rx, ry] = polarToCart(wnr5, data.window_start{i}, data.window_length{i}, 500);
+    subplot(plot_rows,plot_columns,num_plot);
+    num_plot = num_plot+1;
+    imshow(cart_frame');
+    
     %% thresholded image
     %{
     %wnr5 = max(frame_polar(:))*wnr5;

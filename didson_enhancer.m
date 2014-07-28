@@ -68,10 +68,10 @@ while true
         roll = message_in.m_fRoll;
         
         % enhance        
-        estimated_nsr = 0.0018; % replace with experimentally determined value
+        estimated_nsr = (0.0018); % replace with experimentally determined value
         enhanced_frame = deconvwnr(frame, PSF, estimated_nsr);
         enhanced_frame = (1/max(enhanced_frame(:)))*enhanced_frame;
-        %enhanced_frame = max(frame(:))*enhanced_frame; %correct for same max intensity as the original image
+        enhanced_frame = max(frame(:))*enhanced_frame; %correct for same max intensity as the original image
     
         % serialize
         
@@ -90,22 +90,24 @@ while true
                 %axis equal;
 
                 % sonar
-                subplot(1,4,1);
+                subplot(1,2,1);
                 imshow(frame);
                 xlabel('Azimuth');
                 ylabel('Range');   
                 
-                subplot(1,4,2);
+                subplot(1,2,2);
                 imshow(enhanced_frame);
                 xlabel('Azimuth');
                 ylabel('Range');   
                 
+                %{
                 subplot(1,4,3)
                 [counts, x] = imhist(enhanced_frame);
                 
                 subplot(1,4,4);
                 threshold = max(0.4, mean(enhanced_frame(:)) + 5*sqrt(var(enhanced_frame(:))))
                 imshow(im2bw(enhanced_frame, threshold));
+                %}
                 %{
                 hold on
                 for beam=1:96
