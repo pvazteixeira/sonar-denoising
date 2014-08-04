@@ -7,13 +7,13 @@ clc;
 close all;
 
 % Curtiss, March 2014
-data = open('log-2014-03-05.01-short.mat');
+%data = open('log-2014-03-05.01-short.mat');
 
 %data = open('didson-air.mat'); % somwhat useful to get noise properties
 
 % NO TARGETS
 %data = open('didson-tank-wall.mat');
-%data = open('didson-tank-wall-angle.mat');
+data = open('didson-tank-wall-angle.mat');
 %data = open('didson-tank-corner.mat');
 %didson-tank-supposedly-nothing
 %didson-tank-supposedly-nothing-rust-pump-off
