@@ -1,11 +1,11 @@
-% DIDSON_LCM_TO_MAT.M A script to enhance DIDSON frames
+% DIDSON_ENHANCER.M A live script to DIDSON frames and extract returns
 % 
 % The purpose of this script is to listen for DIDSON frames, enhance them
-% using deconvolution/noise reduction/... and republish them on a different
-% channel.
-% Could modify this script to also serve as a lcm to mat converter.
+% using deconvolution/noise reduction/... and then extract returns, which
+% are then registered spatially using information from SONAR and vehicle 
+% poses.
 %
-% Pedro Vaz Teixeira (PVT), May 2014
+% Pedro Vaz Teixeira (PVT), July 2014
 % pvt@mit.edu
 
 close all;  % close any open figures
@@ -18,10 +18,15 @@ lc.subscribe('HAUV_DIDSON_FRAME', aggregator);  % subscribe to didson frames
 
 message_count = 0;
 
-live_view = true;
-figure;
+live_view = true; % enable to get live viewing of raw and enhanced data
+make_movie = true;
+outputVideo = VideoWriter('myfile');
+open(outputVideo);
 
-beam=zeros(1,96);
+figh = figure;
+
+% psf creation (isotropic, simplified)
+beam = zeros(1,96);
 beam(1,[1 9 17 25 33 41 49 57 65 73 81 89]) =[  24 24 24 27 32 40 70 40 32 27 24 24];
 PSF = (1/sum(sum(beam)))*beam;
 
@@ -31,20 +36,6 @@ while true
     if ~isempty(msg) > 0
         message_count = message_count + 1;  % increase message counter;
         message_in = hauv.didson_t(msg.data);    % got a new message
-        
-        % time ( [ Y M D H M S ] )
-        %{
-        data.time{message_count} = [ message.m_nYear, ...
-                                     message.m_nMonth, ...
-                                     message.m_nDay, ...
-                                     message.m_nHour, ...
-                                     message.m_nMinute, ...
-                                     message.m_nSecond];
-        data.u_time{message_count} = message.m_dVehicleTime;
-        %}
-                       
-        % receiver gain
-        %data.gain{message_count} = message.m_nReceiverGain;
                                  
         % frame data
         serialized_image_data = typecast(message_in.m_cData, 'uint8');
@@ -73,32 +64,42 @@ while true
         enhanced_frame = (1/max(enhanced_frame(:)))*enhanced_frame;
         enhanced_frame = max(frame(:))*enhanced_frame; %correct for same max intensity as the original image
     
+        % extract returns
+        
+        % map returns onto the global frame
+        
         % serialize
-        
         % republish on other channel
+        %{
         message_out = message_in;
-        %message_out.m_cData =
+        message_out.m_cData =
         lc.publish('HAUV_DIDSON_FRAME_ENHANCED', message_out);
+        %}
 
-        
         if ( live_view )
             if (mod(message_count, 1)==0)
                 % auv position
-                %pose = cell2mat(data.vehicle_pose);
-                %subplot(1,3,1:2);
-                %plot3(pose(1,:), pose(2,:), pose(3,:),'-b.');
-                %axis equal;
+                %{
+                pose = cell2mat(data.vehicle_pose);
+                subplot(1,3,1:2);
+                plot3(pose(1,:), pose(2,:), pose(3,:),'-b.');
+                axis equal;
+                %}
 
                 % sonar
+                %{
                 subplot(1,2,1);
                 imshow(frame);
                 xlabel('Azimuth');
-                ylabel('Range');   
+                ylabel('Range');  
+                title('Raw');
                 
                 subplot(1,2,2);
                 imshow(enhanced_frame);
                 xlabel('Azimuth');
-                ylabel('Range');   
+                ylabel('Range');  
+                title('Enhanced');
+                %}
                 
                 %{
                 subplot(1,4,3)
@@ -117,8 +118,25 @@ while true
                    end
                 end
                 %}
-                drawnow;
+                
+                
+                if ( make_movie )
+                    imshow([frame,enhanced_frame]);
+                    %set(figh, 'Position', [100, 100, 800, 600]);
+                    drawnow;
+                    F(message_count) = getframe;
+                    
+                end
             end
         end             
     end
 end
+
+
+%%
+clc;
+for k=1:message_count-1
+    writeVideo(outputVideo,F(k));
+end
+
+close(outputVideo);
