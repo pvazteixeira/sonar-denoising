@@ -19,9 +19,11 @@ lc.subscribe('HAUV_DIDSON_FRAME', aggregator);  % subscribe to didson frames
 message_count = 0;
 
 live_view = true; % enable to get live viewing of raw and enhanced data
-make_movie = true;
-outputVideo = VideoWriter('myfile');
-open(outputVideo);
+make_movie = false;
+if (make_movie)
+    outputVideo = VideoWriter('myfile');
+    open(outputVideo);
+end
 
 figh = figure;
 
@@ -57,8 +59,10 @@ while true
         yaw = message_in.m_fHeading;
         pitch = message_in.m_fPitch;
         roll = message_in.m_fRoll;
+               
+        % enhance
+        frame = enhance(frame, 0, 0);
         
-        % enhance        
         estimated_nsr = (0.0018); % replace with experimentally determined value
         enhanced_frame = deconvwnr(frame, PSF, estimated_nsr);
         enhanced_frame = (1/max(enhanced_frame(:)))*enhanced_frame;
@@ -87,7 +91,7 @@ while true
                 %}
 
                 % sonar
-                %{
+                %
                 subplot(1,2,1);
                 imshow(frame);
                 xlabel('Azimuth');
@@ -125,7 +129,9 @@ while true
                     %set(figh, 'Position', [100, 100, 800, 600]);
                     drawnow;
                     F(message_count) = getframe;
-                    
+                   
+                else
+                    drawnow
                 end
             end
         end             
@@ -133,7 +139,7 @@ while true
 end
 
 
-%%
+%% export movie
 clc;
 for k=1:message_count-1
     writeVideo(outputVideo,F(k));
