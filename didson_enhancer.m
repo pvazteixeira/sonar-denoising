@@ -45,6 +45,23 @@ while true
         window_start = 0.375*message_in.m_nWindowStart;       
         window_length = 1.125*(power(2,(message_in.m_nWindowStart)));
         
+        %% enhance frame
+
+        % enhance
+        enhanced_frame = enhance(frame, 0, 0);
+        
+        %{
+        estimated_nsr = (0.0018); % replace with experimentally determined value
+        enhanced_frame = deconvwnr(frame, PSF, estimated_nsr);
+        enhanced_frame = (1/max(enhanced_frame(:)))*enhanced_frame;
+        enhanced_frame = max(frame(:))*enhanced_frame; %correct for same max intensity as the original image
+        %}
+        
+        %% extract returns
+        
+        %% register returns
+        
+        
         % pose data
         x = message_in.m_fSonarXOffset;
         y = message_in.m_fSonarYOffset;
@@ -60,26 +77,24 @@ while true
         pitch = message_in.m_fPitch;
         roll = message_in.m_fRoll;
                
-        % enhance
-        frame = enhance(frame, 0, 0);
-        
-        estimated_nsr = (0.0018); % replace with experimentally determined value
-        enhanced_frame = deconvwnr(frame, PSF, estimated_nsr);
-        enhanced_frame = (1/max(enhanced_frame(:)))*enhanced_frame;
-        enhanced_frame = max(frame(:))*enhanced_frame; %correct for same max intensity as the original image
+
     
-        % extract returns
         
         % map returns onto the global frame
         
-        % serialize
+        
+
+        %% publish returns
+        
         % republish on other channel
         %{
         message_out = message_in;
         message_out.m_cData =
         lc.publish('HAUV_DIDSON_FRAME_ENHANCED', message_out);
         %}
-
+        
+        %% plotting
+        
         if ( live_view )
             if (mod(message_count, 1)==0)
                 % auv position

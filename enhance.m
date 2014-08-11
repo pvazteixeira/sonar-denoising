@@ -11,8 +11,7 @@ function [ enhanced_polar_frame ] = enhance( polar_frame, range_start, range_sto
 %   Pedro Vaz Teixeira, June 2014
 %   pvt@mit.edu
 
-
-%enhanced_polar_frame = zeros(size(polar_frame));
+enhanced_polar_frame = polar_frame; % all subsequent operations on this variable
 
 %% transmission loss (geometric+absroption)
 %{
@@ -31,10 +30,11 @@ end
 %}
 
 %% beam pattern 'taper'
+%
 
 % experimental coefficients (from SOUNDMETRICS)
 
-k1 =  -0.0089;
+k1 = -0.0089;
 k2 = 0.8515;
 k3 = -20.0994;
 
@@ -47,8 +47,21 @@ a = -s*a;% + 0.5*ones(1,96);
 
 offset = repmat(a, [512, 1]);
 
-enhanced_polar_frame = polar_frame+offset;
+enhanced_polar_frame = enhanced_polar_frame + offset;
+%}
 
 %% cross-talk
+%
 
+% psf creation (isotropic, simplified)
+beam = zeros(1,96);
+beam(1,[1 9 17 25 33 41 49 57 65 73 81 89]) =[  24 24 24 27 32 40 70 40 32 27 24 24];
+PSF = (1/sum(sum(beam)))*beam;
+
+% apply wiener filter deconvolution
+estimated_nsr = (0.0018); % replace with experimentally determined value (variance!)
+enhanced_polar_frame = deconvwnr(enhanced_polar_frame, PSF, estimated_nsr);
+enhanced_polar_frame = (1/max(enhanced_polar_frame(:)))*enhanced_polar_frame; % normalize to the [0,1] range
+enhanced_polar_frame = max(polar_frame(:))*enhanced_polar_frame; % match to the same max intensity as the original image
+%}
 
