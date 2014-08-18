@@ -13,7 +13,7 @@ close all;
 
 % NO TARGETS
 %data = open('didson-tank-wall.mat');
-data = open('didson-tank-wall-angle.mat');
+%data = open('didson-tank-wall-angle.mat');
 %data = open('didson-tank-corner.mat');
 %didson-tank-supposedly-nothing
 %didson-tank-supposedly-nothing-rust-pump-off
@@ -30,7 +30,7 @@ data = open('didson-tank-wall-angle.mat');
 %data = open('didson-tank-wall-hollow-tube-tilted.mat');
 %data = open('didson-tank-wall-aluminum-rod-moving.mat');
 %didson-tank-wall-aluminum-rod
-%data = open('didson-tank-wall-thin-hollow-al-rod.mat');
+data = open('didson-tank-wall-thin-hollow-al-rod.mat');
 %data = open('didson-tank-wall-thin-hollow-al-rod-2.mat');
 %data = open('didson-tank-wall-thin-hollow-al-rod-moving.mat');
 
@@ -106,9 +106,10 @@ for i=1:message_count;
     %% enhance.m tests (mostly transmission loss)
     
     % sonar - polar, enhanced
-    %{
+    %
     frame_polar_enhanced = enhance(frame_polar, data.window_start{i}, data.window_start{i} + data.window_length{i});
-    subplot(plot_rows,plot_columns,3);
+    subplot(plot_rows,plot_columns,num_plot);
+    num_plot = num_plot+1;
     imshow(frame_polar_enhanced);
     title('Sonar (polar, enhanced)');
     %}
@@ -184,10 +185,10 @@ for i=1:message_count;
     %}
        
     % restore with noise
-    %
+    %{
     estimated_nsr = 0.0018; % replace with experimentally determined value (variance)
     wnr5 = deconvwnr(frame_polar, PSF, estimated_nsr);
-    %{
+    %
     subplot(plot_rows,plot_columns,num_plot);
     num_plot = num_plot+1;
     imshow(wnr5)
@@ -195,6 +196,7 @@ for i=1:message_count;
     %}
 
     % normalize
+    %{
     wnr5 = (1/max(wnr5(:)))*wnr5;
     wnr5 = max(frame_polar(:))*wnr5; %correct for same max intensity as the original image
     %
@@ -211,6 +213,7 @@ for i=1:message_count;
     %}
     
     %% cartesian 
+    %{
     
     [cart_frame, rx, ry] = polarToCart(frame_polar, data.window_start{i}, data.window_length{i}, 500);
     subplot(plot_rows,plot_columns,num_plot);
@@ -221,6 +224,7 @@ for i=1:message_count;
     subplot(plot_rows,plot_columns,num_plot);
     num_plot = num_plot+1;
     imshow(cart_frame');
+    %}
     
     %% thresholded image
     %{

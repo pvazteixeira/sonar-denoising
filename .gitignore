@@ -1,6 +1,14 @@
+# data
+*.mat
+data/testing
+
 hauv
 types.jar
-*.mat
-.m~
-data/testing
+
+# temporary/backup files
+*.m~
+
+# movies and pictures
 *.avi
+*.png
+*.jpg
