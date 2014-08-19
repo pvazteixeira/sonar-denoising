@@ -60,7 +60,8 @@ while true
         
         returns_didson_frame = [];
         %threshold = 100/255;    % IMPORTANT : replace with something better (e.g. mean + N*stddev)
-        threshold = max(0.4, mean(enhanced_frame(:)) + 5 * sqrt(var(enhanced_frame(:))));
+        threshold = max(0.4, mean(enhanced_frame(:)) + 4.5 * sqrt(var(enhanced_frame(:))));
+        hold off;
         imshow(enhanced_frame);
         hold on;
         
@@ -71,7 +72,7 @@ while true
             
             if value > threshold;
                 % if the return exceeds the threshold, map it in the sonar frame
-                plot(beam, index, 'r.');
+                plot(beam+1, index, 'r.');
                 range = window_start + window_length * (index/512);
                 theta = beam_width * (48 - beam);
                 returns_didson_frame = [returns_didson_frame, [range*cos(theta); range*sin(theta); 0]];
@@ -95,9 +96,9 @@ while true
         R_didson_local = angle2dcm(didson_yaw, didson_pitch, didson_roll);
 
         returns_local = zeros(3, return_count);
-        for i=1:return_count
-            returns_local(:,i) = didson_position + R_didson_local*returns_didson_frame(:,i);
-        end
+        %for i=1:return_count
+            %returns_local(:,i) = didson_position + R_didson_local*returns_didson_frame(:,i);
+        %end
         
         %% register returns in global frame
         
@@ -111,6 +112,7 @@ while true
         
         returns_global = zeros(3, return_count);
         for i=1:return_count
+            returns_local(:,i) = didson_position + R_didson_local*returns_didson_frame(:,i);
             returns_global(:,i) = local_position + R_local_global*returns_local(:,i);
         end
         
