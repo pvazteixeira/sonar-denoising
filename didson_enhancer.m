@@ -59,14 +59,19 @@ while true
         %
         
         returns_didson_frame = [];
-        threshold = 100/255;    % IMPORTANT : replace with something better (e.g. mean + N*stddev)
+        %threshold = 100/255;    % IMPORTANT : replace with something better (e.g. mean + N*stddev)
+        threshold = max(0.4, mean(enhanced_frame(:)) + 5 * sqrt(var(enhanced_frame(:))));
+        imshow(enhanced_frame);
+        hold on;
+        
         for beam = 0:95
         
             % find max in beam
-            [value, index] = max(frame(:, beam + 1));
+            [value, index] = max(enhanced_frame(:, beam + 1));
             
             if value > threshold;
                 % if the return exceeds the threshold, map it in the sonar frame
+                plot(beam, index, 'r.');
                 range = window_start + window_length * (index/512);
                 theta = beam_width * (48 - beam);
                 returns_didson_frame = [returns_didson_frame, [range*cos(theta); range*sin(theta); 0]];
@@ -74,7 +79,9 @@ while true
              
         end
         return_count = size(returns_didson_frame,2);
+        disp(return_count);
         
+        drawnow;
         %}
         
         %% register returns in local frame
@@ -85,7 +92,7 @@ while true
         didson_pitch = deg2rad(message_in.m_fSonarTilt + message_in.m_fSonarTiltOffset);
         didson_roll = deg2rad(message_in.m_fSonarRoll + message_in.m_fSonarRollOffset);
         
-        R_didson_local = angle2dcm(didson_yaw, didson_pitch, didson_raw);
+        R_didson_local = angle2dcm(didson_yaw, didson_pitch, didson_roll);
 
         returns_local = zeros(3, return_count);
         for i=1:return_count
@@ -123,7 +130,7 @@ while true
                 %}
 
                 % sonar
-                %
+                %{
                 subplot(1,2,1);
                 imshow(frame);
                 xlabel('Azimuth');
@@ -134,9 +141,10 @@ while true
                 imshow(enhanced_frame);
                 xlabel('Azimuth');
                 ylabel('Range');  
-                title('Enhanced');
+                title('Enhanced');               
                 %}
-                
+            
+               
                 %{
                 subplot(1,4,3)
                 [counts, x] = imhist(enhanced_frame);
