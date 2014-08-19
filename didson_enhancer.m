@@ -12,6 +12,8 @@
 
 close all;  % close any open figures
 clc;        % clear the console
+clear;
+addjars;
 
 %% LCM 
 lc = lcm.lcm.LCM.getSingleton();
@@ -80,34 +82,26 @@ while true
              
         end
         return_count = size(returns_didson_frame,2);
-        disp(return_count);
-        
+       
         drawnow;
         %}
         
-        %% register returns in local frame
-    
+        %% register returns 
+        
         % didson pose in the platform frame (m_pose_didson_local in didson_cv)
         didson_position = [ message_in.m_fSonarXOffset; message_in.m_fSonarYOffset; message_in.m_fSonarZOffset; ];
         didson_yaw = deg2rad(message_in.m_fSonarPan + message_in.m_fSonarPanOffset);
         didson_pitch = deg2rad(message_in.m_fSonarTilt + message_in.m_fSonarTiltOffset);
         didson_roll = deg2rad(message_in.m_fSonarRoll + message_in.m_fSonarRollOffset);
-        
         R_didson_local = angle2dcm(didson_yaw, didson_pitch, didson_roll);
 
-        returns_local = zeros(3, return_count);
-        %for i=1:return_count
-            %returns_local(:,i) = didson_position + R_didson_local*returns_didson_frame(:,i);
-        %end
-        
-        %% register returns in global frame
-        
+        returns_local = zeros(3, return_count);        
+     
         % platform pose in the global frame (m_pose_local_global in didson_cv)
         local_position = [message_in.m_fSonarX; message_in.m_fSonarY; message_in.m_fSonarZ;];
         local_yaw = deg2rad(message_in.m_fHeading);
         local_pitch = deg2rad(message_in.m_fPitch);
         local_roll = deg2rad(message_in.m_fRoll);       
-        
         R_local_global = angle2dcm(local_yaw, local_pitch, local_roll);
         
         returns_global = zeros(3, return_count);
@@ -115,9 +109,15 @@ while true
             returns_local(:,i) = didson_position + R_didson_local*returns_didson_frame(:,i);
             returns_global(:,i) = local_position + R_local_global*returns_local(:,i);
         end
-        
+             
         %% publish returns
-     
+        msg_out = hauv.sonar_points_t();
+        msg_out.pos = (local_position + R_local_global*didson_position)';
+        [y, p, r ] = dcm2angle(R_local_global*R_didson_local);
+        msg_out.orientation = [ y, p, r, 0];
+        msg_out.points_global = returns_global;
+        
+        lc.publish('SONAR_POINTS_2', msg_out);
         
         %% plotting
         
