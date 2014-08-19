@@ -8,13 +8,20 @@
 % Pedro Vaz Teixeira (PVT), July 2014
 % pvt@mit.edu
 
+%% init
+
 close all;  % close any open figures
 clc;        % clear the console
 
+%% LCM 
 lc = lcm.lcm.LCM.getSingleton();
 aggregator = lcm.lcm.MessageAggregator();
-
 lc.subscribe('HAUV_DIDSON_FRAME', aggregator);  % subscribe to didson frames
+
+%% DIDSON parameters
+beam_width = deg2rad(29/96);
+
+%%
 
 message_count = 0;
 
@@ -24,7 +31,6 @@ if (make_movie)
     outputVideo = VideoWriter('myfile');
     open(outputVideo);
 end
-
 figh = figure;
 
 % psf creation (isotropic, simplified)
@@ -45,53 +51,64 @@ while true
         window_start = 0.375*message_in.m_nWindowStart;       
         window_length = 1.125*(power(2,(message_in.m_nWindowStart)));
         
+        
         %% enhance frame
+        enhanced_frame = enhance(frame, 0, 0);      
 
-        % enhance
-        enhanced_frame = enhance(frame, 0, 0);
-        
-        %{
-        estimated_nsr = (0.0018); % replace with experimentally determined value
-        enhanced_frame = deconvwnr(frame, PSF, estimated_nsr);
-        enhanced_frame = (1/max(enhanced_frame(:)))*enhanced_frame;
-        enhanced_frame = max(frame(:))*enhanced_frame; %correct for same max intensity as the original image
-        %}
-        
         %% extract returns
+        %
         
-        %% register returns
+        returns_didson_frame = [];
+        threshold = 100/255;    % IMPORTANT : replace with something better (e.g. mean + N*stddev)
+        for beam = 0:95
         
+            % find max in beam
+            [value, index] = max(frame(:, beam + 1));
+            
+            if value > threshold;
+                % if the return exceeds the threshold, map it in the sonar frame
+                range = window_start + window_length * (index/512);
+                theta = beam_width * (48 - beam);
+                returns_didson_frame = [returns_didson_frame, [range*cos(theta); range*sin(theta); 0]];
+            end
+             
+        end
+        return_count = size(returns_didson_frame,2);
         
-        % pose data
-        x = message_in.m_fSonarXOffset;
-        y = message_in.m_fSonarYOffset;
-        z = message_in.m_fSonarZOffset;
-        yaw = deg2rad(message_in.m_fSonarPan + message_in.m_fSonarPanOffset);
-        pitch = deg2rad(message_in.m_fSonarTilt + message_in.m_fSonarTiltOffset);
-        roll = deg2rad(message_in.m_fSonarRoll + message_in.m_fSonarRollOffset);
-        
-        x = message_in.m_fSonarX;
-        y = message_in.m_fSonarY;
-        z = message_in.m_fSonarZ;
-        yaw = message_in.m_fHeading;
-        pitch = message_in.m_fPitch;
-        roll = message_in.m_fRoll;
-               
-
-    
-        
-        % map returns onto the global frame
-        
-        
-
-        %% publish returns
-        
-        % republish on other channel
-        %{
-        message_out = message_in;
-        message_out.m_cData =
-        lc.publish('HAUV_DIDSON_FRAME_ENHANCED', message_out);
         %}
+        
+        %% register returns in local frame
+    
+        % didson pose in the platform frame (m_pose_didson_local in didson_cv)
+        didson_position = [ message_in.m_fSonarXOffset; message_in.m_fSonarYOffset; message_in.m_fSonarZOffset; ];
+        didson_yaw = deg2rad(message_in.m_fSonarPan + message_in.m_fSonarPanOffset);
+        didson_pitch = deg2rad(message_in.m_fSonarTilt + message_in.m_fSonarTiltOffset);
+        didson_roll = deg2rad(message_in.m_fSonarRoll + message_in.m_fSonarRollOffset);
+        
+        R_didson_local = angle2dcm(didson_yaw, didson_pitch, didson_raw);
+
+        returns_local = zeros(3, return_count);
+        for i=1:return_count
+            returns_local(:,i) = didson_position + R_didson_local*returns_didson_frame(:,i);
+        end
+        
+        %% register returns in global frame
+        
+        % platform pose in the global frame (m_pose_local_global in didson_cv)
+        local_position = [message_in.m_fSonarX; message_in.m_fSonarY; message_in.m_fSonarZ;];
+        local_yaw = deg2rad(message_in.m_fHeading);
+        local_pitch = deg2rad(message_in.m_fPitch);
+        local_roll = deg2rad(message_in.m_fRoll);       
+        
+        R_local_global = angle2dcm(local_yaw, local_pitch, local_roll);
+        
+        returns_global = zeros(3, return_count);
+        for i=1:return_count
+            returns_global(:,i) = local_position + R_local_global*returns_local(:,i);
+        end
+        
+        %% publish returns
+     
         
         %% plotting
         

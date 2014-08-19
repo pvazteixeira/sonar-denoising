@@ -50,7 +50,7 @@ offset = repmat(a, [512, 1]);
 enhanced_polar_frame = enhanced_polar_frame + offset;
 %}
 
-%% cross-talk
+%% cross-talk reduction
 %
 
 % psf creation (isotropic, simplified)
@@ -61,6 +61,8 @@ PSF = (1/sum(sum(beam)))*beam;
 % apply wiener filter deconvolution
 estimated_nsr = (0.0018); % replace with experimentally determined value (variance!)
 enhanced_polar_frame = deconvwnr(enhanced_polar_frame, PSF, estimated_nsr);
+
+% normalization
 enhanced_polar_frame = (1/max(enhanced_polar_frame(:)))*enhanced_polar_frame; % normalize to the [0,1] range
 enhanced_polar_frame = max(polar_frame(:))*enhanced_polar_frame; % match to the same max intensity as the original image
 %}
