@@ -50,7 +50,7 @@ while true
         % frame data
         serialized_image_data = typecast(message_in.m_cData, 'uint8');
         frame = im2double(flip(reshape(serialized_image_data, 96, 512)')); % deserialize & store
-        window_start = 0.375*message_in.m_nWindowStart;       
+        window_start = 0.375 * message_in.m_nWindowStart;       
         window_length = 1.125*(power(2,(message_in.m_nWindowStart)));
         
         
@@ -68,10 +68,8 @@ while true
         hold on;
         
         for beam = 0:95
-        
             % find max in beam
-            [value, index] = max(enhanced_frame(:, beam + 1));
-            
+            [value, index] = max(enhanced_frame(:, beam + 1));          
             if value > threshold;
                 % if the return exceeds the threshold, map it in the sonar frame
                 plot(beam+1, index, 'r.');
@@ -90,34 +88,38 @@ while true
         
         % didson pose in the platform frame (m_pose_didson_local in didson_cv)
         didson_position = [ message_in.m_fSonarXOffset; message_in.m_fSonarYOffset; message_in.m_fSonarZOffset; ];
-        didson_yaw = deg2rad(message_in.m_fSonarPan + message_in.m_fSonarPanOffset);
-        didson_pitch = deg2rad(message_in.m_fSonarTilt + message_in.m_fSonarTiltOffset);
+        didson_pan = deg2rad(message_in.m_fSonarPan + message_in.m_fSonarPanOffset);
+        didson_tilt = deg2rad(message_in.m_fSonarTilt + message_in.m_fSonarTiltOffset);
         didson_roll = deg2rad(message_in.m_fSonarRoll + message_in.m_fSonarRollOffset);
-        R_didson_local = angle2dcm(didson_yaw, didson_pitch, didson_roll);
+        R_didson_local = angle2dcm(didson_pan, didson_tilt, didson_roll);
 
         returns_local = zeros(3, return_count);        
      
         % platform pose in the global frame (m_pose_local_global in didson_cv)
         local_position = [message_in.m_fSonarX; message_in.m_fSonarY; message_in.m_fSonarZ;];
-        local_yaw = deg2rad(message_in.m_fHeading);
+        local_heading = deg2rad(message_in.m_fHeading);
         local_pitch = deg2rad(message_in.m_fPitch);
         local_roll = deg2rad(message_in.m_fRoll);       
-        R_local_global = angle2dcm(local_yaw, local_pitch, local_roll);
+        R_local_global = angle2dcm(local_heading, local_pitch, local_roll);
         
         returns_global = zeros(3, return_count);
-        for i=1:return_count
+        for i = 1:return_count
             returns_local(:,i) = didson_position + R_didson_local*returns_didson_frame(:,i);
             returns_global(:,i) = local_position + R_local_global*returns_local(:,i);
         end
              
         %% publish returns
         msg_out = hauv.sonar_points_t();
+        
         msg_out.pos = (local_position + R_local_global*didson_position)';
         [y, p, r ] = dcm2angle(R_local_global*R_didson_local);
         msg_out.orientation = [ y, p, r, 0];
-        msg_out.points_global = returns_global;
+
+        msg_out.n = int32(return_count);
+        msg_out.points_global = returns_global';
+        msg_out.points_local = returns_local';
         
-        lc.publish('SONAR_POINTS_2', msg_out);
+        lc.publish('SONAR_POINTS', msg_out);
         
         %% plotting
         
