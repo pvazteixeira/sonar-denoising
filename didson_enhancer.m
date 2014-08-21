@@ -8,8 +8,7 @@
 % Pedro Vaz Teixeira (PVT), July 2014
 % pvt@mit.edu
 
-%% init
-
+%% Clean up
 close all;  % close any open figures
 clc;        % clear the console
 clear;
@@ -21,9 +20,9 @@ aggregator = lcm.lcm.MessageAggregator();
 lc.subscribe('HAUV_DIDSON_FRAME', aggregator);  % subscribe to didson frames
 
 %% DIDSON parameters
-beam_width = deg2rad(29/96);
+beam_width = deg2rad(29/96);    % 29 degree HFOV x 96 beams
 
-%%
+%% Initialization
 
 message_count = 0;
 
@@ -35,51 +34,49 @@ if (make_movie)
 end
 figh = figure;
 
-% psf creation (isotropic, simplified)
-beam = zeros(1,96);
-beam(1,[1 9 17 25 33 41 49 57 65 73 81 89]) =[  24 24 24 27 32 40 70 40 32 27 24 24];
-PSF = (1/sum(sum(beam)))*beam;
-
-window_length_ref = [ 1.125, 2.25, 4.5, 9.0];
-
+%% Main processing loop
 while true
-    millis_to_wait = 10;
+    millis_to_wait = 1;
     msg = aggregator.getNextMessage(millis_to_wait);
+
     if ~isempty(msg) > 0
-        message_count = message_count + 1;  % increase message counter;
-        message_in = hauv.didson_t(msg.data);    % got a new message
+        tic
+        message_count = message_count + 1;      % increase message counter;
+        message_in = hauv.didson_t(msg.data);   % got a new message
                                  
-        % frame data
-        serialized_image_data = typecast(message_in.m_cData, 'uint8');
-        frame = im2double((reshape(serialized_image_data, 96, 512)')); % deserialize & store
+        serialized_image_data = typecast(message_in.m_cData, 'uint8');  % frame data
+        frame = im2double((reshape(serialized_image_data, 96, 512)));   % deserialize & store
+        
         window_start = 0.375 * message_in.m_nWindowStart;       
-        %window_length = 1.125*(power(2,(message_in.m_nWindowStart)));
-        window_length = window_length_ref(message_in.m_nWindowStart+1);
+        window_length = 1.125*(power(2,(message_in.m_nWindowStart)));
+        
+        subplot(2,1,1)
+        imshow(frame);
         
         %% enhance frame
         enhanced_frame = enhance(frame, 0, 0);      
-
-        %% extract returns
-        %
+        subplot(2,1,2);
+        imshow(enhanced_frame);
         
+        
+        %% extract returns
+        %{
         returns_didson_frame = [];
-        threshold = 110/255;    % IMPORTANT : replace with something better (e.g. mean + N*stddev)
         threshold = max(0.43, mean(enhanced_frame(:)) + 3 * sqrt(var(enhanced_frame(:))));
         hold off;
-        imshow(enhanced_frame);
+        
         hold on;
         
         for beam = 1:96
             % find max in beam
-            [value, index] = max(enhanced_frame(:, beam));          
+            [value, index] = max(enhanced_frame(beam, : ));          
             if value > threshold;
                 % if the return exceeds the threshold, map it in the sonar frame
-                plot(beam, index, 'r.');
+                plot(index, beam, 'r.');
                 range = window_start + window_length * ((index)/512);
-                theta = beam_width * (48 - beam);
+                theta = - beam_width * (48 - beam);
                 returns_didson_frame = [returns_didson_frame, [range*cos(theta); range*sin(theta); 0; 1]];
             end
-             
         end
         return_count = size(returns_didson_frame,2);
        
@@ -87,6 +84,7 @@ while true
         %}
         
         %% register returns 
+        %{
         
         % didson pose in the platform frame (m_pose_didson_local in didson_cv)
         didson_position = [ message_in.m_fSonarXOffset; 
@@ -95,10 +93,12 @@ while true
         didson_pan = deg2rad(message_in.m_fSonarPan + message_in.m_fSonarPanOffset);
         didson_tilt = deg2rad(message_in.m_fSonarTilt + message_in.m_fSonarTiltOffset);
         didson_roll = deg2rad(message_in.m_fSonarRoll + message_in.m_fSonarRollOffset);
-        R_didson_local = angle2dcm(didson_pan, didson_tilt, didson_roll)';
+        %
+        R_didson_local = angle2dcm(didson_pan, didson_tilt, didson_roll);
         T_didson_local = [  R_didson_local, didson_position;
                             zeros(1,3),     1;];
         returns_local = T_didson_local*returns_didson_frame;
+        %
                         
         % platform pose in the global frame (m_pose_local_global in didson_cv)
         local_position = [  message_in.m_fSonarX; 
@@ -107,15 +107,17 @@ while true
         local_heading = deg2rad(message_in.m_fHeading);
         local_pitch = deg2rad(message_in.m_fPitch);
         local_roll = deg2rad(message_in.m_fRoll);       
-        R_local_global = angle2dcm(local_heading, local_pitch, local_roll)';
+        %
+        R_local_global = angle2dcm(local_heading, local_pitch, local_roll);
         T_local_global = [  R_local_global, local_position;
                             zeros(1,3),     1;];
         returns_global = T_local_global*returns_local;
-             
+        
+        %}
         
         %% publish returns
+        %{
         msg_out = hauv.sonar_points_t();
-        
         msg_out.pos = (local_position + R_local_global*didson_position)';
         [y, p, r ] = dcm2angle(R_local_global*R_didson_local);
         msg_out.orientation = [ y, p, r, 0];
@@ -123,8 +125,9 @@ while true
         msg_out.n = int32(return_count);
         msg_out.points_global = returns_global(1:3,:)';
         msg_out.points_local = returns_local(1:3,:)';
-        
+       
         lc.publish('SONAR_POINTS', msg_out);
+        %}
         
         %% plotting
         
@@ -183,7 +186,8 @@ while true
                     drawnow
                 end
             end
-        end             
+        end
+        toc
     end
 end
 
