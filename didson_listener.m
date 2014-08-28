@@ -3,30 +3,38 @@
 %   Pedro Vaz Teixeira, June 2014
 %   pvt@mit.edu
 
+close all;
+clc;
+clear;
+addjars;
+
 lc = lcm.lcm.LCM.getSingleton();
 aggregator = lcm.lcm.MessageAggregator();
 
 lc.subscribe('HAUV_DIDSON_FRAME', aggregator);    % subscribe to didson stuff
 
-close all;
+figure;
 
 %PSF = ones(96,96);
 PSF = fspecial('gaussian',96);
 while true
-    millis_to_wait = 10;
+    millis_to_wait = 1;
     msg = aggregator.getNextMessage(millis_to_wait);
 
     if ~isempty(msg) > 0
+        tic
+        
         %disp('received frame!');
         m = hauv.didson_t(msg.data);
         serializedImageData = typecast(m.m_cData, 'uint8');
         % deserialize (duh)
-        frame = flip(reshape(serializedImageData, 96, 512)');
+        frame = (reshape(serializedImageData, 96, 512));
                
-        beam_intensity = sum(frame,1)/512;
-        bin_intensity = sum(frame,2)/96;
+        %beam_intensity = sum(frame,1)/512;
+        %bin_intensity = sum(frame,2)/96;
         
         % intensity/beam
+        %{
         subplot(1,6,1)
         plot(beam_intensity,'b');
         hold on
@@ -35,13 +43,17 @@ while true
         xlim([0 95])
         title('Average intensity per beam');
         hold off
+        %}
        
         % Raw frame
-        subplot(1,6,2);
+        %subplot(1,6,2);
         imshow(frame);
         title('Raw frame');
+        xlabel('range');
+        ylabel('angle');
          
         % intensity/bin
+        %{
         subplot(1,6,3)
         plot(flip(bin_intensity),0:511,'b');
         hold on;
@@ -51,6 +63,7 @@ while true
         ylim([0 511])
         title('Average intensity per bin');
         hold off
+        %}
         
         % ROI locator
         
@@ -92,6 +105,7 @@ while true
         % DECONVOLUTION & PSF ESTIMATION
         %
 %         PSF = fspecial('gaussian',96);
+        %{
         PSF = ones(96);
         [J,PSF] = deconvblind(frame, PSF, 10);
         subplot(1,6,4)
@@ -173,6 +187,8 @@ while true
 %         xlim([128,255]);
 %         disp(max(max(frame)));
         drawnow;
+        
+        toc
     end
 end
 
