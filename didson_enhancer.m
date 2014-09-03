@@ -50,21 +50,30 @@ while true
         window_start = 0.375 * message_in.m_nWindowStart;       
         window_length = 1.125*(power(2,(message_in.m_nWindowStart)));
         
+        %
         subplot(2,1,1)
         imshow(frame);
-        
+        ylabel('angle')
+        xlabel('range')
+        title('raw frame')
+        %}
         %% enhance frame
         enhanced_frame = enhance(frame, 0, 0);      
+        %
         subplot(2,1,2);
 		hold off;        
 		imshow(enhanced_frame);
+        ylabel('angle')
+        xlabel('range')
+        title('enhanced frame');
 		hold on;        
-
+        %}
         %% extract returns
-        %{
+        %
         returns_didson_frame = [];
         threshold = max(0.43, mean(enhanced_frame(:)) + 3 * sqrt(var(enhanced_frame(:))));
         
+        %
         for beam = 1:96
             % find max in beam
             [value, index] = max(enhanced_frame(beam, : ));          
@@ -72,68 +81,80 @@ while true
                 % if the return exceeds the threshold, map it in the sonar frame
                 plot(index, beam, 'r.');
                 range = window_start + window_length * ((index)/512);
-                theta = - beam_width * (48 - beam);
+                theta = beam_width * (48 - beam);
                 returns_didson_frame = [returns_didson_frame, [range*cos(theta); range*sin(theta); 0; 1]];
             end
         end
-        return_count = size(returns_didson_frame,2);
-       
-        drawnow;
+        %}
+        %returns_didson_frame = [0;0;0;1];   % DEBUG
+        return_count = size(returns_didson_frame, 2);
+              
+        %drawnow;
         %}
         
-        %% register returns 
-        %{
-        
-        
-        %{
-        % local = dvl frame
-        T_didson_local = [R_didson_local , didson_position;
-        T_dvl_didson =                   
-        
-        %}
-        
-        % didson pose in the platform frame (m_pose_didson_local in didson_cv)
-        didson_position_local = [ message_in.m_fSonarXOffset; message_in.m_fSonarYOffset; message_in.m_fSonarZOffset; ];
-        
-        didson_yaw = deg2rad(message_in.m_fSonarPan + message_in.m_fSonarPanOffset);
-        didson_pitch = deg2rad(message_in.m_fSonarTilt + message_in.m_fSonarTiltOffset);
-        didson_roll = deg2rad(message_in.m_fSonarRoll + message_in.m_fSonarRollOffset);
-        R_local_didson = angle2dcm(didson_yaw, didson_pitch, didson_roll)';
-		T_local_didson = [R_local_didson, didson_position_local;
-							zeros(1,3), 1];
-        returns_local = T_local_didson*returns_didson_frame;
-     
-        % platform pose in the global frame (m_pose_local_global in didson_cv)
-        local_position_global = [message_in.m_fSonarX; message_in.m_fSonarY; message_in.m_fSonarZ;];
-        local_yaw = deg2rad(message_in.m_fHeading);
-        local_pitch = deg2rad(message_in.m_fPitch);
-        local_roll = deg2rad(message_in.m_fRoll);       
-        R_global_local = angle2dcm(local_yaw, local_pitch, local_roll)';
-        T_global_local = [R_global_local, local_position_global;
-							zeros(1,3), 1];
-        returns_local = T_local_didson*returns_local;
+        if(return_count>0)
+            %% register returns 
+            %
 
-		%{
-        for i=1:return_count
-            returns_local(:,i) = didson_position_local + R_local_didson*returns_didson_frame(:,i); % returns in dvl frame
-            returns_global(:,i) = local_position_global + R_global_local*returns_local(:,i);        % returns in global frame
+            % convention: 
+            % - aTb transforms from 'b' to 'a' (homogenous transformation
+            % matrix)
+            % - aRb is the rotation from 'b' to 'a'
+            % - r_a is a pose in the 'a' reference frame
+            % - r_Ob_a is the position of the origin of the 'b' frame in
+            % the 'a' frame
+            % - homogeneous transform matrices are thus:
+            %   [ aRb        r_Ob_a
+            %     zeros(3,1) 1]
+            
+            
+            
+            
+            
+            % didson pose in the platform frame (m_pose_didson_local in didson_cv)
+            % didson_position_local = [ message_in.m_fSonarXOffset; message_in.m_fSonarYOffset; message_in.m_fSonarZOffset; ];
+            didson_position_local = [0; 0; 0];
+
+            didson_yaw = deg2rad(message_in.m_fSonarPan + message_in.m_fSonarPanOffset);
+            didson_pitch = deg2rad(message_in.m_fSonarTilt + message_in.m_fSonarTiltOffset);
+            didson_roll = deg2rad(message_in.m_fSonarRoll + message_in.m_fSonarRollOffset);
+            R_local_didson = angle2dcm(didson_yaw, didson_pitch, didson_roll)';
+            T_local_didson = [R_local_didson, didson_position_local;
+                                zeros(1,3), 1];
+            returns_local = T_local_didson*returns_didson_frame;
+
+            % platform pose in the global frame (m_pose_local_global in didson_cv)
+            local_position_global = [message_in.m_fSonarX; message_in.m_fSonarY; message_in.m_fSonarZ;];
+            local_yaw = deg2rad(message_in.m_fHeading);
+            local_pitch = deg2rad(message_in.m_fPitch);
+            local_roll = deg2rad(message_in.m_fRoll);       
+            R_global_local = angle2dcm(local_yaw, local_pitch, local_roll)';
+            T_global_local = [R_global_local, local_position_global;
+                                zeros(1,3), 1];
+            returns_global = T_global_local*returns_local;
+            %}
+            %{
+            for i=1:return_count
+                returns_local(:,i) = didson_position_local + R_local_didson*returns_didson_frame(:,i); % returns in dvl frame
+                returns_global(:,i) = local_position_global + R_global_local*returns_local(:,i);        % returns in global frame
+            end
+            %}   
+
+            %% publish returns
+            %
+            msg_out = hauv.sonar_points_t();
+            msg_out.pos = (local_position_global + R_global_local*didson_position_local)';
+            [y, p, r ] = dcm2angle(R_global_local*R_local_didson);
+            msg_out.orientation = [ y, p, r, 0];
+
+            msg_out.n = int32(return_count);
+            msg_out.points_global = returns_global(1:3,:)';
+            msg_out.points_local = returns_local(1:3,:)';
+
+            lc.publish('SONAR_POINTS', msg_out);
+            %}
         end
-          %}   
-
-        %% publish returns
-        %{
-        msg_out = hauv.sonar_points_t();
-        msg_out.pos = (local_position_global + R_global_local*didson_position_local)';
-        [y, p, r ] = dcm2angle(R_global_local*R_local_didson);
-        msg_out.orientation = [ y, p, r, 0];
-
-        msg_out.n = int32(return_count);
-        msg_out.points_global = returns_global(1:3,:)';
-        msg_out.points_local = returns_local(1:3,:)';
-       
-        lc.publish('SONAR_POINTS', msg_out);
-        %}
-        
+            
         %% plotting
         
         if ( live_view )
