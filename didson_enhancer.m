@@ -117,23 +117,29 @@ while true
                 5/i - image frame
             %}
 
-            %% HALF-SPLIT
+            %% SPLIT
             %
-            % vehicle to global (from NAV)
+            % vehicle/platform to global (from NAV)
             gTv = getTransform( [message_in.m_fSonarX; message_in.m_fSonarY; message_in.m_fSonarZ;], ...
                                 deg2rad([message_in.m_fHeading, message_in.m_fPitch, message_in.m_fRoll]));
-            % DVL/basket to vehicle - basket pitch is variable
-            vTd = getTransform( [], ...
-                                deg2rad([]));
+            
+            % DVL/basket to vehicle - basket pitch is variable, but not
+            % reported in the didson frame!!!!
+            vTd = getTransform( [0 0 0], ...
+                                deg2rad([0 0 0]));
+            
             % didson cage to DVL/basket - cage pitch/pan is variable
-            dTc = getTransform( [0, 0.2, 0], ...
-                                deg2rad([]));
+            dTc = getTransform( [0, 0.30, 0], ...
+                                deg2rad([90 message_in.m_fSonarTilt + message_in.m_fSonarTiltOffset 0]));
+            
             % focus point to didson cage - focus point position is variable
-            cTf = getTransform( [], ...
-                                deg2rad([]));
+            % (assume fixed for now)
+            cTf = getTransform( [-0.115, 0, -0.07], ...
+                                deg2rad([0 0 0]));
+            
             % image to focus point - (should be) fixed
-            fTi = getTransform( [], ...
-                                deg2rad([]));
+            fTi = getTransform( [0 0 0], ...
+                                deg2rad([0 0 0]));
             %}
 
             %% publish returns
