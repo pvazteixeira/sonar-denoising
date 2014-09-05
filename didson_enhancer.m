@@ -106,46 +106,42 @@ while true
             % - homogeneous transform matrices are thus:
             %   [ aRb        r_Ob_a
             %     zeros(3,1) 1]
-            
-            
-            
-            
-            
-            % didson pose in the platform frame (m_pose_didson_local in didson_cv)
-            % didson_position_local = [ message_in.m_fSonarXOffset; message_in.m_fSonarYOffset; message_in.m_fSonarZOffset; ];
-            didson_position_local = [0; 0; 0];
-
-            didson_yaw = deg2rad(message_in.m_fSonarPan + message_in.m_fSonarPanOffset);
-            didson_pitch = deg2rad(message_in.m_fSonarTilt + message_in.m_fSonarTiltOffset);
-            didson_roll = deg2rad(message_in.m_fSonarRoll + message_in.m_fSonarRollOffset);
-            R_local_didson = angle2dcm(didson_yaw, didson_pitch, didson_roll)';
-            T_local_didson = [R_local_didson, didson_position_local;
-                                zeros(1,3), 1];
-            returns_local = T_local_didson*returns_didson_frame;
-
-            % platform pose in the global frame (m_pose_local_global in didson_cv)
-            local_position_global = [message_in.m_fSonarX; message_in.m_fSonarY; message_in.m_fSonarZ;];
-            local_yaw = deg2rad(message_in.m_fHeading);
-            local_pitch = deg2rad(message_in.m_fPitch);
-            local_roll = deg2rad(message_in.m_fRoll);       
-            R_global_local = angle2dcm(local_yaw, local_pitch, local_roll)';
-            T_global_local = [R_global_local, local_position_global;
-                                zeros(1,3), 1];
-            returns_global = T_global_local*returns_local;
-            %}
+            %
             %{
-            for i=1:return_count
-                returns_local(:,i) = didson_position_local + R_local_didson*returns_didson_frame(:,i); % returns in dvl frame
-                returns_global(:,i) = local_position_global + R_global_local*returns_local(:,i);        % returns in global frame
-            end
-            %}   
+            Reference frames:
+                0/g - global
+                1/v - vehicle
+                2/d - dvl/basket
+                3/c - didson cage
+                4/f - didson focal point
+                5/i - image frame
+            %}
+
+            %% HALF-SPLIT
+            %
+            % vehicle to global (from NAV)
+            gTv = getTransform( [message_in.m_fSonarX; message_in.m_fSonarY; message_in.m_fSonarZ;], ...
+                                deg2rad([message_in.m_fHeading, message_in.m_fPitch, message_in.m_fRoll]));
+            % DVL/basket to vehicle - basket pitch is variable
+            vTd = getTransform( [], ...
+                                deg2rad([]));
+            % didson cage to DVL/basket - cage pitch/pan is variable
+            dTc = getTransform( [0, 0.2, 0], ...
+                                deg2rad([]));
+            % focus point to didson cage - focus point position is variable
+            cTf = getTransform( [], ...
+                                deg2rad([]));
+            % image to focus point - (should be) fixed
+            fTi = getTransform( [], ...
+                                deg2rad([]));
+            %}
 
             %% publish returns
             %
             msg_out = hauv.sonar_points_t();
             msg_out.pos = (local_position_global + R_global_local*didson_position_local)';
             [y, p, r ] = dcm2angle(R_global_local*R_local_didson);
-            msg_out.orientation = [ y, p, r, 0];
+            msg_out.orientation = [y, p, r, 0];
 
             msg_out.n = int32(return_count);
             msg_out.points_global = returns_global(1:3,:)';
