@@ -50,7 +50,7 @@ while true
         window_start = 0.375 * message_in.m_nWindowStart;       
         window_length = 1.125*(power(2,(message_in.m_nWindowStart)));
         
-        %
+        %{
         subplot(2,1,1)
         imshow(frame);
         ylabel('angle')
@@ -59,7 +59,7 @@ while true
         %}
         %% enhance frame
         enhanced_frame = enhance(frame, 0, 0);      
-        %
+        %{
         subplot(2,1,2);
 		hold off;        
 		imshow(enhanced_frame);
@@ -71,15 +71,15 @@ while true
         %% extract returns
         %
         returns_didson_frame = [];
-        threshold = max(0.43, mean(enhanced_frame(:)) + 3 * sqrt(var(enhanced_frame(:))));
+        threshold = max(0.5, mean(enhanced_frame(:)) + 3 * sqrt(var(enhanced_frame(:))));
         
-        %
+        % TO DO: don't extract unless depth > 0.5
         for beam = 1:96
             % find max in beam
             [value, index] = max(enhanced_frame(beam, : ));          
             if value > threshold;
                 % if the return exceeds the threshold, map it in the sonar frame
-                plot(index, beam, 'r.');
+                %plot(index, beam, 'r.');
                 range = window_start + window_length * ((index)/512);
                 theta = beam_width * (48 - beam);
                 returns_didson_frame = [returns_didson_frame, [range*cos(theta); range*sin(theta); 0; 1]];
@@ -119,35 +119,51 @@ while true
 
             %% SPLIT
             %
+            clc
+            disp('Vehicle pose')
+            disp([message_in.m_fSonarX; message_in.m_fSonarY; message_in.m_fSonarZ; message_in.m_fHeading; message_in.m_fPitch; message_in.m_fRoll]')
+            disp('Sonar attitude')
+            disp([message_in.m_fSonarPan, message_in.m_fSonarTilt, message_in.m_fSonarRoll]);
+            disp('Sonar attitude - offsets')
+            disp([message_in.m_fSonarPanOffset, message_in.m_fSonarTiltOffset, message_in.m_fSonarRollOffset]);
+%             subplot(4,1,3);
+%             hold on
+%             plot(message_in.m_fSonarX, message_in.m_fSonarY,'k.');
+%             subplot(4,1,4);
+%             hold on
+%             plot(message_count, message_in.m_fSonarZ,'k.');
             % vehicle/platform to global (from NAV)
             gTv = getTransform( [message_in.m_fSonarX; message_in.m_fSonarY; message_in.m_fSonarZ;], ...
                                 deg2rad([message_in.m_fHeading, message_in.m_fPitch, message_in.m_fRoll]));
             
             % DVL/basket to vehicle - basket pitch is variable, but not
             % reported in the didson frame!!!!
-            vTd = getTransform( [0 0 0], ...
-                                deg2rad([0 0 0]));
+            vTd = getTransform( [0 0 0]', ...
+                                deg2rad([0 message_in.m_fSonarRoll + message_in.m_fSonarRollOffset 0]));
             
             % didson cage to DVL/basket - cage pitch/pan is variable
-            dTc = getTransform( [0, 0.30, 0], ...
-                                deg2rad([90 message_in.m_fSonarTilt + message_in.m_fSonarTiltOffset 0]));
+            dTc = getTransform( [0, 0.30, 0]', ...
+                                deg2rad([message_in.m_fSonarPan+message_in.m_fSonarPanOffset message_in.m_fSonarTilt + message_in.m_fSonarTiltOffset 0]));
             
             % focus point to didson cage - focus point position is variable
             % (assume fixed for now)
-            cTf = getTransform( [-0.115, 0, -0.07], ...
+            cTf = getTransform( [-0.115, 0, -0.07]', ...
                                 deg2rad([0 0 0]));
             
             % image to focus point - (should be) fixed
-            fTi = getTransform( [0 0 0], ...
+            fTi = getTransform( [0 0 0]', ...
                                 deg2rad([0 0 0]));
             %}
+            
+            returns_local = vTd * dTc * cTf * fTi * returns_didson_frame;
+            returns_global = gTv * returns_local;
 
             %% publish returns
             %
             msg_out = hauv.sonar_points_t();
-            msg_out.pos = (local_position_global + R_global_local*didson_position_local)';
-            [y, p, r ] = dcm2angle(R_global_local*R_local_didson);
-            msg_out.orientation = [y, p, r, 0];
+            msg_out.pos = [message_in.m_fSonarX; message_in.m_fSonarY; message_in.m_fSonarZ;];
+            %[y, p, r ] = dcm2angle(R_global_local*R_local_didson);
+            %msg_out.orientation = [y, p, r, 0];
 
             msg_out.n = int32(return_count);
             msg_out.points_global = returns_global(1:3,:)';
