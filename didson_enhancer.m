@@ -39,8 +39,8 @@ while true
     millis_to_wait = 1;
     msg = aggregator.getNextMessage(millis_to_wait);
 
-    if ~isempty(msg) > 0
-        tic
+    if ~isempty(msg)
+        %tic
         message_count = message_count + 1;      % increase message counter;
         message_in = hauv.didson_t(msg.data);   % got a new message
                                  
@@ -68,12 +68,15 @@ while true
         title('enhanced frame');
 		hold on;        
         %}
+        
         %% extract returns
         %
         returns_didson_frame = [];
-        threshold = max(0.5, mean(enhanced_frame(:)) + 3 * sqrt(var(enhanced_frame(:))));
+        threshold = max(0.43, mean(enhanced_frame(:)) + 3 * sqrt(var(enhanced_frame(:))));
         
         % TO DO: don't extract unless depth > 0.5
+        % TO DO: replace with something other than a for loop
+        % TO DO: pre-allocate return vector
         for beam = 1:96
             % find max in beam
             [value, index] = max(enhanced_frame(beam, : ));          
@@ -94,19 +97,6 @@ while true
         
         if(return_count>0)
             %% register returns 
-            %
-
-            % convention: 
-            % - aTb transforms from 'b' to 'a' (homogenous transformation
-            % matrix)
-            % - aRb is the rotation from 'b' to 'a'
-            % - r_a is a pose in the 'a' reference frame
-            % - r_Ob_a is the position of the origin of the 'b' frame in
-            % the 'a' frame
-            % - homogeneous transform matrices are thus:
-            %   [ aRb        r_Ob_a
-            %     zeros(3,1) 1]
-            %
             %{
             Reference frames:
                 0/g - global
@@ -120,12 +110,12 @@ while true
             %% SPLIT
             %
             clc
-            disp('Vehicle pose')
-            disp([message_in.m_fSonarX; message_in.m_fSonarY; message_in.m_fSonarZ; message_in.m_fHeading; message_in.m_fPitch; message_in.m_fRoll]')
-            disp('Sonar attitude')
-            disp([message_in.m_fSonarPan, message_in.m_fSonarTilt, message_in.m_fSonarRoll]);
-            disp('Sonar attitude - offsets')
-            disp([message_in.m_fSonarPanOffset, message_in.m_fSonarTiltOffset, message_in.m_fSonarRollOffset]);
+%             disp('Vehicle pose')
+%             disp([message_in.m_fSonarX; message_in.m_fSonarY; message_in.m_fSonarZ; message_in.m_fHeading; message_in.m_fPitch; message_in.m_fRoll]')
+%             disp('Sonar attitude')
+%             disp([message_in.m_fSonarPan, message_in.m_fSonarTilt, message_in.m_fSonarRoll]);
+%             disp('Sonar attitude - offsets')
+%             disp([message_in.m_fSonarPanOffset, message_in.m_fSonarTiltOffset, message_in.m_fSonarRollOffset]);
 %             subplot(4,1,3);
 %             hold on
 %             plot(message_in.m_fSonarX, message_in.m_fSonarY,'k.');
@@ -231,7 +221,6 @@ while true
                 end
             end
         end
-        toc
     end
 end
 

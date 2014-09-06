@@ -9,3 +9,14 @@ function [ aTb ] = getTransform( b_position_a, attitude )
             zeros(1,3), 1];
 end
 
+% convention: 
+% - aTb transforms from 'b' to 'a' (homogenous transformation
+% matrix)
+% - aRb is the rotation from 'b' to 'a'
+% - r_a is a pose in the 'a' reference frame
+% - r_Ob_a is the position of the origin of the 'b' frame in
+% the 'a' frame
+% - homogeneous transform matrices are thus:
+%   [ aRb        r_Ob_a
+%     zeros(3,1) 1]
+%
