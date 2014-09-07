@@ -48,7 +48,7 @@ while true
         frame = im2double((reshape(serialized_image_data, 96, 512)));   % deserialize & store
         
         window_start = 0.375 * message_in.m_nWindowStart;       
-        window_length = 1.125*(power(2,(message_in.m_nWindowStart)));
+        window_length = 1.125*(power(2,(message_in.m_nWindowLength)));
         
         %{
         subplot(2,1,1)
