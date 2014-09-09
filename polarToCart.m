@@ -7,6 +7,9 @@ function [ cart_frame, res_x, res_y ] = polarToCart( polar_frame, window_start, 
 %   Pedro Vaz Teixeira, May 2014
 %   pvt@mit.edu
 
+
+    % frame: rows are beams, columns are bins!
+
     n_beams = 96;
     beam_width = deg2rad(0.3);
     
@@ -42,7 +45,7 @@ function [ cart_frame, res_x, res_y ] = polarToCart( polar_frame, window_start, 
             if ( beam < 0 || beam >= n_beams || bin < 0 || bin >= n_bins)
                 cart_frame(j,i) = 0;
             else
-                cart_frame(j,i) = double(polar_frame(bin+1, beam+1));
+                cart_frame(j,i) = double(polar_frame(beam+1,bin+1));
             end
         end
     end

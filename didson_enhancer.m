@@ -51,24 +51,44 @@ while true
         window_length = 1.125*(power(2,(message_in.m_nWindowLength)));
         
         %{
-        subplot(2,1,1)
+        subplot(2,2,1)
         imshow(frame);
         ylabel('angle')
         xlabel('range')
-        title('raw frame')
+        title('raw frame (polar)')
         %}
         %% enhance frame
         enhanced_frame = enhance(frame, 0, 0);      
         %{
-        subplot(2,1,2);
+        
+        subplot(2,2,2);
 		hold off;        
 		imshow(enhanced_frame);
         ylabel('angle')
         xlabel('range')
-        title('enhanced frame');
-		hold on;        
-        %}
+        title('enhanced frame (polar)');
+		hold on;
         
+        
+        subplot(2,2,3);
+		hold off;        
+        [cart_frame, ~, ~] = polarToCart(frame, window_start, window_length, 512);
+		imshow(cart_frame);
+        ylabel('angle')
+        xlabel('range')
+        title('frame (cartesian)');
+		hold on;        
+        
+        
+        subplot(2,2,4);
+		hold off;
+        [cart_enhanced_frame, ~, ~] = polarToCart(enhanced_frame, window_start, window_length, 512);
+		imshow(cart_enhanced_frame);
+        ylabel('angle')
+        xlabel('range')
+        title('enhanced frame (cartesian)');
+		hold on;
+        %}
         %% extract returns
         %
         returns_didson_frame = [];
