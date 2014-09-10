@@ -43,7 +43,7 @@ function [ cart_frame, res_x, res_y ] = polarToCart( polar_frame, window_start, 
             bin = floor( (sqrt( x*x + y*y) - min_range)/bin_width );
                 
             if ( beam < 0 || beam >= n_beams || bin < 0 || bin >= n_bins)
-                cart_frame(j,i) = 0;
+                %cart_frame(j,i) = 0; % no need
             else
                 cart_frame(j,i) = double(polar_frame(beam+1,bin+1));
             end

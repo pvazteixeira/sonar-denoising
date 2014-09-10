@@ -50,7 +50,7 @@ while true
         window_start = 0.375 * message_in.m_nWindowStart;       
         window_length = 1.125*(power(2,(message_in.m_nWindowLength)));
         
-        %{
+        %
         subplot(2,2,1)
         imshow(frame);
         ylabel('angle')
@@ -59,7 +59,7 @@ while true
         %}
         %% enhance frame
         enhanced_frame = enhance(frame, 0, 0);      
-        %{
+        %
         
         subplot(2,2,2);
 		hold off;        
