@@ -1,12 +1,15 @@
-function sonarpmodel(N, p_tp, p_tn )
+function sonarpmodel(p_o, p_tp, p_tn )
+  # game-like model for sonar hits
   #p_tp = 0.9;  # probability for a true positive
   #p_tn = 0.99;  # probability for a true negative
 
   p_fp = 1 - p_tn;
   p_fn = 1 - p_tp;
+  N = length(p_o)
 
-  p_o = zeros(N,1);
-  p_o[(N-200):end] = 1;
+  #p_o = zeros(N,1);
+  #p_o[350:360] = 1;
+  #p_o[400:410] = 1;
 
   pr = zeros(N,1);
 
