@@ -32,7 +32,7 @@ function [ cart_frame, res_x, res_y ] = polarToCart( polar_frame, window_start, 
     res_x = abs(height./x_span); % px/m (invert to obtain size of each pixel)
     res_y = abs(-width./y_span); % px/m 
     
-    cart_frame = zeros(width, height);
+    cart_frame = ones(width, height); % for publishing
     
     for i=1:height
         x = x0 + (i-1)*x_scale;

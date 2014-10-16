@@ -51,7 +51,8 @@ while true
         window_length = 1.125*(power(2,(message_in.m_nWindowLength)));
         
         %
-        subplot(2,2,1)
+        figure(1);
+        subplot(3,2,1)
         imshow(frame);
         ylabel('angle')
         xlabel('range')
@@ -61,7 +62,7 @@ while true
         enhanced_frame = enhance(frame, 0, 0);      
         %
         
-        subplot(2,2,2);
+        subplot(3,2,2);
 		hold off;        
 		imshow(enhanced_frame);
         ylabel('angle')
@@ -70,7 +71,7 @@ while true
 		hold on;
         
         
-        subplot(2,2,3);
+        subplot(3,2,3);
 		hold off;        
         [cart_frame, ~, ~] = polarToCart(frame, window_start, window_length, 512);
 		imshow(cart_frame);
@@ -80,7 +81,7 @@ while true
 		hold on;        
         
         
-        subplot(2,2,4);
+        subplot(3,2,4);
 		hold off;
         [cart_enhanced_frame, ~, ~] = polarToCart(enhanced_frame, window_start, window_length, 512);
 		imshow(cart_enhanced_frame);
@@ -88,6 +89,20 @@ while true
         xlabel('range')
         title('enhanced frame (cartesian)');
 		hold on;
+        
+        
+        i = (0:255)/255;
+        No = hist(frame(:), i);
+        Ne = hist(enhanced_frame(:), i);
+        subplot(3,2,5)
+        bar(i,No);
+        xlim([0 1])
+        ylim([0 10000])
+        subplot(3,2,6)
+        bar(i,Ne);
+        xlim([0 1])
+        ylim([0 10000])
+        
         %}
         %% extract returns
         %
