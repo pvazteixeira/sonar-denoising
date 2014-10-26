@@ -106,13 +106,15 @@ while true
         
         [~, attitude] = getPose(gTi);
         
-        scan_msg = hauv_sonar_scan_t();
+        scan_msg = hauv.sonar_scan_t();
         scan_msg.num_beams = 96;
+        %scan_msg.beams = hauv.sonar_range_t();
+        
         for beam = 1:96
-            beam_msg = hauv_sonar_range_t();
+            beam_msg = hauv.sonar_range_t();
 
             beam_msg.origin = sonar_origin;
-            beam.msg.orentation = [attitude; 0];
+            beam_msg.orientation = [attitude; 0];
             
             beam_msg.range = ranges(beam);
             beam_msg.max_range = max_range;
