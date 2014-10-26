@@ -59,7 +59,7 @@ beam(1,[1 9 17 25 33 41 49 57 65 73 81 89]) =[  24 24 24 27 32 40 70 40 32 27 24
 PSF = (1/sum(sum(beam)))*beam';
 
 % apply wiener filter deconvolution
-    estimated_nsr = (0.0018); % replace with experimentally determined value (variance!)
+estimated_nsr = (0.0018); % replace with experimentally determined value (variance!)
 enhanced_polar_frame = deconvwnr(enhanced_polar_frame, PSF, estimated_nsr);
 
 % normalization

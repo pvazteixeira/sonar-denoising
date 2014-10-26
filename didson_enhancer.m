@@ -20,7 +20,7 @@ aggregator = lcm.lcm.MessageAggregator();
 lc.subscribe('HAUV_DIDSON_FRAME', aggregator);  % subscribe to didson frames
 
 %% DIDSON parameters
-beam_width = deg2rad(28.8/96);    % 29 degree HFOV x 96 beams
+beam_width = deg2rad(28.8/96);    % 0.3 degree HFOV/beam x 96 beams
 
 %% Main processing loop
 while true
@@ -29,20 +29,20 @@ while true
     
     if ~isempty(msg)
         %tic
-        message_in = hauv.didson_t(msg.data);   % got a new message
+        frame_msg = hauv.didson_t(msg.data);   % got a new message
         
-        serialized_image_data = typecast(message_in.m_cData, 'uint8');  % frame data
+        serialized_image_data = typecast(frame_msg.m_cData, 'uint8');  % frame data
         frame = im2double((reshape(serialized_image_data, 96, 512)));   % deserialize & store
                 
-        window_start = 0.375 * message_in.m_nWindowStart;
-        window_length = 1.125*(power(2,(message_in.m_nWindowLength)));
+        window_start = 0.375 * frame_msg.m_nWindowStart;
+        window_length = 1.125*(power(2,(frame_msg.m_nWindowLength)));
         max_range = window_start + window_length;
         
         enhanced_frame = enhance(frame, 0, 0);
                 
         %% extract returns
         returns_didson_frame = zeros(4,96);
-        ranges = zeros(1,96)
+        ranges = zeros(1,96);
         threshold = max(0.43, mean(enhanced_frame(:)) + 3 * sqrt(var(enhanced_frame(:))));
         
         % TO DO: 
@@ -66,83 +66,65 @@ while true
             end
         end      
 
-        sonar_origin = [message_in.m_fSonarX; message_in.m_fSonarY; message_in.m_fSonarZ;]
+        sonar_origin = [frame_msg.m_fSonarX; frame_msg.m_fSonarY; frame_msg.m_fSonarZ;];
         
-        % move transform computation here.
+        %{
+        Reference frames:
+        0/g - global
+        1/v - vehicle
+        2/d - dvl/basket
+        3/c - didson cage
+        4/f - didson focal point
+        5/i - image frame
+        %}
+        
+        %             disp('Vehicle pose')
+        %             disp([frame_msg.m_fSonarX; frame_msg.m_fSonarY; frame_msg.m_fSonarZ; frame_msg.m_fHeading; frame_msg.m_fPitch; frame_msg.m_fRoll]')
+        %             disp('Sonar attitude')
+        %             disp([frame_msg.m_fSonarPan, frame_msg.m_fSonarTilt, frame_msg.m_fSonarRoll]);
+        %             disp('Sonar attitude - offsets')
+        %             disp([frame_msg.m_fSonarPanOffset, frame_msg.m_fSonarTiltOffset, frame_msg.m_fSonarRollOffset]);
+        
+        % vehicle/platform to global (from NAV)
+        gTv = getTransform( sonar_origin, deg2rad([frame_msg.m_fHeading, frame_msg.m_fPitch, frame_msg.m_fRoll]));
+        
+        % DVL/basket to vehicle - basket pitch is variable, but not
+        % reported in the didson frame!!!!
+        vTd = getTransform( [0 0 0]', deg2rad([0 frame_msg.m_fSonarRoll + frame_msg.m_fSonarRollOffset 0]));
+        
+        % didson cage to DVL/basket - cage pitch/pan is variable
+        dTc = getTransform( [0, 0.30, 0]', deg2rad([frame_msg.m_fSonarPan+frame_msg.m_fSonarPanOffset frame_msg.m_fSonarTilt + frame_msg.m_fSonarTiltOffset 0]));
+        
+        % focus point to didson cage - focus point position is variable
+        % (assume fixed for now)
+        cTf = getTransform( [-0.115, 0, -0.07]', deg2rad([0 0 0]));
+        
+        % image to focus point - (should be) fixed
+        fTi = getTransform( [0 0 0]', deg2rad([0 0 0]));
+
+        gTi = gTv * vTd * dTc * cTf * fTi;
+        
+        [~, attitude] = getPose(gTi);
         
         scan_msg = hauv_sonar_scan_t();
+        scan_msg.num_beams = 96;
         for beam = 1:96
             beam_msg = hauv_sonar_range_t();
 
             beam_msg.origin = sonar_origin;
-            beam.msg.orentation =           
-            beam_msg.range = ranges(beam)
+            beam.msg.orentation = [attitude; 0];
+            
+            beam_msg.range = ranges(beam);
             beam_msg.max_range = max_range;
-            beam_msg.endpoint = 
+            
+            beam_msg.endpoint = gTv * returns_didson_frame(:,beam);
+
             beam_msg.hfov = rad2deg(0.3);
             beam_msg.vfov = rad2deg(1.0);
             
             scan_msg.beams(beam) = beam_msg;
         end
-       
-            %% register returns
-            %{
-            Reference frames:
-                0/g - global
-                1/v - vehicle
-                2/d - dvl/basket
-                3/c - didson cage
-                4/f - didson focal point
-                5/i - image frame
-            %}
-
-            %% SPLIT
-            %
-            clc
-%             disp('Vehicle pose')
-%             disp([message_in.m_fSonarX; message_in.m_fSonarY; message_in.m_fSonarZ; message_in.m_fHeading; message_in.m_fPitch; message_in.m_fRoll]')
-%             disp('Sonar attitude')
-%             disp([message_in.m_fSonarPan, message_in.m_fSonarTilt, message_in.m_fSonarRoll]);
-%             disp('Sonar attitude - offsets')
-%             disp([message_in.m_fSonarPanOffset, message_in.m_fSonarTiltOffset, message_in.m_fSonarRollOffset]);
-            % vehicle/platform to global (from NAV)
-            gTv = getTransform( [message_in.m_fSonarX; message_in.m_fSonarY; message_in.m_fSonarZ;], ...
-                                deg2rad([message_in.m_fHeading, message_in.m_fPitch, message_in.m_fRoll]));
-
-            % DVL/basket to vehicle - basket pitch is variable, but not
-            % reported in the didson frame!!!!
-            vTd = getTransform( [0 0 0]', ...
-                                deg2rad([0 message_in.m_fSonarRoll + message_in.m_fSonarRollOffset 0]));
-
-            % didson cage to DVL/basket - cage pitch/pan is variable
-            dTc = getTransform( [0, 0.30, 0]', ...
-                                deg2rad([message_in.m_fSonarPan+message_in.m_fSonarPanOffset message_in.m_fSonarTilt + message_in.m_fSonarTiltOffset 0]));
-
-            % focus point to didson cage - focus point position is variable
-            % (assume fixed for now)
-            cTf = getTransform( [-0.115, 0, -0.07]', ...
-                                deg2rad([0 0 0]));
-
-            % image to focus point - (should be) fixed
-            fTi = getTransform( [0 0 0]', ...
-                                deg2rad([0 0 0]));
-            %}
-
-            returns_local = vTd * dTc * cTf * fTi * returns_didson_frame;
-            returns_global = gTv * returns_local;
-
-            %% publish returns
-            %{
-            points_msg = hauv.sonar_points_t();
-            points_msg.pos = [message_in.m_fSonarX; message_in.m_fSonarY; message_in.m_fSonarZ;];
-            %[y, p, r ] = dcm2angle(R_global_local*R_local_didson);
-            %points_msg.orientation = [y, p, r, 0];
-
-            points_msg.n = int32(return_count);
-            points_msg.points_global = returns_global(1:3,:)';
-            points_msg.points_local = returns_local(1:3,:)';
-
-            lc.publish('SONAR_POINTS', points_msg);
-            %}       
+      
+        lc.publish('SONAR_POINTS', scan_msg);     
     end
 end
