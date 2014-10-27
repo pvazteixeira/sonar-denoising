@@ -22,6 +22,7 @@ lc.subscribe('HAUV_DIDSON_FRAME', aggregator);  % subscribe to didson frames
 %% DIDSON parameters
 beam_width = deg2rad(28.8/96);    % 0.3 degree HFOV/beam x 96 beams
 
+
 %% Main processing loop
 while true
     millis_to_wait = 1000;
@@ -42,11 +43,12 @@ while true
         %% Image enhancement
         enhanced_frame = enhance(frame, 0, 0);
                 
-        %{
+        %
         subplot(1,2,1)
         imshow(polarToCart(frame,window_start,window_length,300)')
         subplot(1,2,2)
         imshow(polarToCart(enhanced_frame,window_start,window_length,300)')
+        hold on
         drawnow
         %}
         
@@ -73,15 +75,13 @@ while true
         % vehicle/platform to global (from NAV)
         gTv = getTransform( sonar_origin, deg2rad([frame_msg.m_fHeading, frame_msg.m_fPitch, frame_msg.m_fRoll]));
         
-        % DVL/basket to vehicle - basket pitch is variable, but not
-        % reported in the didson frame!!!!
+        % DVL/basket to vehicle - basket pitch is variable, but not reported in the didson frame!!!!
         vTd = getTransform( [0 0 0]', deg2rad([0 frame_msg.m_fSonarRoll + frame_msg.m_fSonarRollOffset 0]));
         
         % didson cage to DVL/basket - cage pitch/pan is variable
         dTc = getTransform( [0, 0.30, 0]', deg2rad([frame_msg.m_fSonarPan+frame_msg.m_fSonarPanOffset frame_msg.m_fSonarTilt + frame_msg.m_fSonarTiltOffset 0]));
         
-        % focus point to didson cage - focus point position is variable
-        % (assume fixed for now)
+        % focus point to didson cage - focus point position is variable (assume fixed for now)
         cTf = getTransform( [-0.115, 0, -0.07]', deg2rad([0 0 0]));
         
         % image to focus point - (should be) fixed
@@ -102,7 +102,7 @@ while true
             theta = beam_width * (48 - beam);
             iTb = getTransform([0 0 0]', [theta 0 0]);  % image to beam
             
-            [p, a] = getPose(gTi*iTb);
+            [p, a] = getPose(gTi*iTb);  % beam pose
             beam_msgs(beam).origin = p;
             beam_msgs(beam).orientation = [a; 0] ;
             
@@ -113,7 +113,7 @@ while true
             % find max in beam
             [value, index] = max(enhanced_frame(beam, : ));
             if value > threshold;
-                % if the return exceeds the threshold, map it in the sonar frame
+                % if the return exceeds the threshold, map it in the sonar frame              
                 range = window_start + window_length * ((index)/512);
                 beam_msgs(beam).endpoint = gTi*[range*cos(theta); range*sin(theta); 0; 1];
                 beam_msgs(beam).range = range;
@@ -125,7 +125,7 @@ while true
         end      
         scan_msg.beams = beam_msgs;
 
-        lc.publish('SONAR_POINTS', scan_msg);     
+        lc.publish('SONAR_SCANS', scan_msg);     
         toc
     end
 end
