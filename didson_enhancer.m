@@ -109,24 +109,22 @@ while true
         scan_msg = hauv.sonar_scan_t();
         scan_msg.num_beams = 96;
         %scan_msg.beams = hauv.sonar_range_t();
-        
+        beam_msgs(96,1) = hauv.sonar_range_t;
         for beam = 1:96
-            beam_msg = hauv.sonar_range_t();
+            beam_msgs(beam) = hauv.sonar_range_t();
 
-            beam_msg.origin = sonar_origin;
-            beam_msg.orientation = [attitude; 0];
+            beam_msgs(beam).origin = sonar_origin;
+            beam_msgs(beam).orientation = [attitude; 0];
             
-            beam_msg.range = ranges(beam);
-            beam_msg.max_range = max_range;
+            beam_msgs(beam).range = ranges(beam);
+            beam_msgs(beam).max_range = max_range;
             
-            beam_msg.endpoint = gTv * returns_didson_frame(:,beam);
+            beam_msgs(beam).endpoint = gTv * returns_didson_frame(:,beam);
 
-            beam_msg.hfov = rad2deg(0.3);
-            beam_msg.vfov = rad2deg(1.0);
-            
-            scan_msg.beams(beam) = beam_msg;
+            beam_msgs(beam).hfov = rad2deg(0.3);
+            beam_msgs(beam).vfov = rad2deg(1.0);
         end
-      
+        scan_msg.beams(beam) = beam_msgs;
         lc.publish('SONAR_POINTS', scan_msg);     
     end
 end
