@@ -42,13 +42,23 @@ while true
         
         %% Image enhancement
         enhanced_frame = enhance(frame, 0, 0);
-                
+        if( min(enhanced_frame(:)) < 0)
+            disp(['warning: enhanced frame has negative values! (min=',num2str(min(enhanced_frame(:))),')'])
+        end
+        
+        %% re-transmit improved image
         %
+        frame_msg.m_cData = typecast(reshape(enhanced_frame,512*96,1),'uint8');
+        lc.publish('HAUV_DIDSON_FRAME_ENHANCED', frame_msg);     
+        %}
+        
+        %% show original and enhanced
+        %{
         subplot(1,2,1)
         imshow(polarToCart(frame,window_start,window_length,300)')
         subplot(1,2,2)
         imshow(polarToCart(enhanced_frame,window_start,window_length,300)')
-        hold on
+        %hold on
         drawnow
         %}
         
@@ -69,7 +79,7 @@ while true
         %             disp([frame_msg.m_fSonarPan, frame_msg.m_fSonarTilt, frame_msg.m_fSonarRoll]);
         %             disp('Sonar attitude - offsets')
         %             disp([frame_msg.m_fSonarPanOffset, frame_msg.m_fSonarTiltOffset, frame_msg.m_fSonarRollOffset]);
-        
+        %{
         sonar_origin = [frame_msg.m_fSonarX; frame_msg.m_fSonarY; frame_msg.m_fSonarZ;];
         
         % vehicle/platform to global (from NAV)
@@ -88,8 +98,10 @@ while true
         fTi = getTransform( [0 0 0]', deg2rad([0 0 0]));
 
         gTi = gTv * vTd * dTc * cTf * fTi;
+        %}
         
         %% extract returns
+        %{  
         returns_didson_frame = zeros(4,96);
         ranges = zeros(1,96);
         threshold = max(0.43, mean(enhanced_frame(:)) + 3 * sqrt(var(enhanced_frame(:))));
@@ -126,6 +138,7 @@ while true
         scan_msg.beams = beam_msgs;
 
         lc.publish('SONAR_SCANS', scan_msg);     
+        %}
         toc
     end
 end
