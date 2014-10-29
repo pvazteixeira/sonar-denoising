@@ -22,7 +22,6 @@ lc.subscribe('HAUV_DIDSON_FRAME', aggregator);  % subscribe to didson frames
 %% DIDSON parameters
 beam_width = deg2rad(28.8/96);    % 0.3 degree HFOV/beam x 96 beams
 
-
 %% Main processing loop
 while true
     millis_to_wait = 1000;
@@ -31,10 +30,13 @@ while true
     if ~isempty(msg)
         tic
         frame_msg = hauv.didson_t(msg.data);   % got a new message
-        
         serialized_image_data = typecast(frame_msg.m_cData, 'uint8');  % frame data
         frame = im2double((reshape(serialized_image_data, 96, 512)));   % deserialize & store
-                
+        
+        if( min(frame(:)) < 0)
+            disp(['warning: frame has negative values! (min=',num2str(min(enhanced_frame(:))),')'])
+        end
+        
         window_start =  0.375 * frame_msg.m_nWindowStart;
         window_length = 1.125*(power(2,(frame_msg.m_nWindowLength)));
         max_range = window_start + window_length;
@@ -48,16 +50,18 @@ while true
         
         %% re-transmit improved image
         %
-        frame_msg.m_cData = typecast(reshape(enhanced_frame,512*96,1),'uint8');
+        frame_msg.m_cData = typecast(reshape(im2uint8(enhanced_frame),512*96,1),'int8');
         lc.publish('HAUV_DIDSON_FRAME_ENHANCED', frame_msg);     
         %}
         
         %% show original and enhanced
-        %{
+        %
         subplot(1,2,1)
         imshow(polarToCart(frame,window_start,window_length,300)')
+        title('original')
         subplot(1,2,2)
         imshow(polarToCart(enhanced_frame,window_start,window_length,300)')
+        title('enhanced')
         %hold on
         drawnow
         %}
