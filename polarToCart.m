@@ -34,12 +34,20 @@ function [ cart_frame, res_x, res_y ] = polarToCart( polar_frame, window_start, 
     
     cart_frame = ones(width, height); % for publishing
     
+    a = [0.0030, -0.0055, 2.6829, 48.04];   % coeffs for distortion aware formula
+    
     for i=1:height
         x = x0 + (i-1)*x_scale;
         for j=1:width
             y = y0 + (j-1)*y_scale;
             
-            beam = n_beams/2 - floor(atan2(y, x)/beam_width);
+            % simple geometry formula
+            %beam = n_beams/2 - floor(atan2(y, x)/beam_width);
+            
+            % distortion-aware formula
+            theta = rad2deg(atan2(y, x));
+            beam = round(a(1)*theta^3 + a(2)*theta^2+a(3)*theta+a(4)+1);
+            
             bin = floor( (sqrt( x*x + y*y) - min_range)/bin_width );
                 
             if ( beam < 0 || beam >= n_beams || bin < 0 || bin >= n_bins)
