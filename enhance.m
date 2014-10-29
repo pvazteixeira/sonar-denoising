@@ -48,7 +48,7 @@ a = -s*a;% + 0.5*ones(1,96);
 
 offset = repmat(a', [1 512]);
 
-enhanced_polar_frame = enhanced_polar_frame + offset;
+%enhanced_polar_frame = enhanced_polar_frame + offset;
 %}
 
 %% cross-talk reduction

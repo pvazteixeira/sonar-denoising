@@ -55,12 +55,12 @@ while true
         %}
         
         %% show original and enhanced
-        %
+        %{
         subplot(1,2,1)
-        imshow(polarToCart(frame,window_start,window_length,300)')
+        imshow(polarToCart(frame,window_start,window_length,500)')
         title('original')
         subplot(1,2,2)
-        imshow(polarToCart(enhanced_frame,window_start,window_length,300)')
+        imshow(polarToCart(enhanced_frame,window_start,window_length,500)')
         title('enhanced')
         %hold on
         drawnow
