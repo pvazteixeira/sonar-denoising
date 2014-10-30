@@ -33,14 +33,11 @@ while true
         serialized_image_data = typecast(frame_msg.m_cData, 'uint8');  % frame data
         frame = im2double((reshape(serialized_image_data, 96, 512)));   % deserialize & store
         
+        %{
         if( min(frame(:)) < 0)
             disp(['warning: frame has negative values! (min=',num2str(min(enhanced_frame(:))),')'])
         end
-        
-        window_start =  0.375 * frame_msg.m_nWindowStart;
-        window_length = 1.125*(power(2,(frame_msg.m_nWindowLength)));
-        max_range = window_start + window_length;
-        max_range_e = max_range + 1; % used to generate endpoints beyond max range for empty beam measurements
+        %}
         
         %% Image enhancement
         enhanced_frame = enhance(frame, 0, 0);
@@ -56,6 +53,10 @@ while true
         
         %% show original and enhanced
         %{
+        window_start =  0.375 * frame_msg.m_nWindowStart;
+        window_length = 1.125*(power(2,(frame_msg.m_nWindowLength)));
+        max_range = window_start + window_length;
+        max_range_e = max_range + 1; % used to generate endpoints beyond max range for empty beam measurements
         subplot(1,2,1)
         imshow(polarToCart(frame,window_start,window_length,500)')
         title('original')
