@@ -19,7 +19,11 @@ lc.subscribe('HAUV_DIDSON_FRAME', aggregator);  % subscribe to didson frames
 
 %% Initialization
 message_count = 0;
-frame_reduction_factor = 1; % increase if playing logs faster than real time
+frame_reduction_factor = 4; % increase if playing logs faster than real time
+edges = linspace(0,1,25);
+h = figure();
+xlim([0 1])
+ylim([0 512*96])
 
 %% Main processing loop
 while true
@@ -36,14 +40,16 @@ while true
       frame = im2double((reshape(serialized_image_data, 96, 512)));   % deserialize & store
       enhanced_frame = enhance(frame, 0, 0);    
   
-      figure(2); clf;
-      histogram(frame(:),25);
+      set(0, 'CurrentFigure', h);
+      clf;
+      histogram(frame(:),edges);
       hold on
-      histogram(enhanced_frame(:),25)
+      histogram(enhanced_frame(:),edges);
       grid on
-      xlim([0 1])
       set(gca,'YScale','log')
-      % the following lines are commented out
+      
+      % the following lines are commented out as they significantly slow
+      % everything down
 %     legend('raw','enhanced')
 %     xlabel('intensity')
 %     ylabel('count')
