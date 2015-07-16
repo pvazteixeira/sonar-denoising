@@ -43,12 +43,12 @@ i = 0:95; % beam index
 k0 = 0.6; % my own, additional, correction factor
 a = (k0)*(k1 * i.^2 + k2 * i + k3*ones(1,96));
 
-s = 1/70; % this is the MuPerDB (image intensity over dB, eg. 255/(70dB) )
-a = -s*a;% + 0.5*ones(1,96);
+s = 1/70;   % this is the MuPerDB (image intensity over dB, eg. 255/(70dB) )
+a = -s*a;   % + 0.5*ones(1,96);
 
 offset = repmat(a', [1 512]);
 
-%enhanced_polar_frame = enhanced_polar_frame + offset;
+enhanced_polar_frame = enhanced_polar_frame + offset;
 %}
 
 %% cross-talk reduction
@@ -57,7 +57,7 @@ offset = repmat(a', [1 512]);
 % psf creation (isotropic, simplified)
 beam = zeros(1,96);
 beam(1,[1 9 17 25 33 41 49 57 65 73 81 89]) =[  24 24 24 27 32 40 70 40 32 27 24 24];
-PSF = (1/sum(sum(beam)))*beam';
+PSF = (1/(sum(beam(:))))*beam';
 
 % apply wiener filter deconvolution
 estimated_nsr = (0.0018); % replace with experimentally determined value (variance!)

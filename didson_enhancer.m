@@ -20,7 +20,9 @@ aggregator = lcm.lcm.MessageAggregator();
 lc.subscribe('HAUV_DIDSON_FRAME', aggregator);  % subscribe to didson frames
 
 %% DIDSON parameters
-beam_width = deg2rad(28.8/96);    % 0.3 degree HFOV/beam x 96 beams
+beam_width = deg2rad(28.8/96);    % 0.3 degree (3dB down) HFOV/beam x 96 beams
+
+h = figure();
 
 %% Main processing loop
 while true
@@ -29,8 +31,8 @@ while true
     
     if ~isempty(msg)
         tic
-        frame_msg = hauv.didson_t(msg.data);   % got a new message
-        serialized_image_data = typecast(frame_msg.m_cData, 'uint8');  % frame data
+        frame_msg = hauv.didson_t(msg.data);   
+        serialized_image_data = typecast(frame_msg.m_cData, 'uint8');   % frame data
         frame = im2double((reshape(serialized_image_data, 96, 512)));   % deserialize & store
         
         %{
@@ -40,27 +42,34 @@ while true
         %}
         
         %% Image enhancement
-        enhanced_frame = enhance(frame, 0, 0);
+        window_start =  0.375 * frame_msg.m_nWindowStart;
+        window_length = 1.125*(power(2,(frame_msg.m_nWindowLength)));
+        window_stop = window_start + window_length;
+        enhanced_frame = enhance(frame, window_start, window_stop);
         if( min(enhanced_frame(:)) < 0)
             disp(['warning: enhanced frame has negative values! (min=',num2str(min(enhanced_frame(:))),')'])
         end
         
         %% re-transmit improved image
-        %
+        %{
         frame_msg.m_cData = typecast(reshape(im2uint8(enhanced_frame),512*96,1),'int8');
         lc.publish('HAUV_DIDSON_FRAME_ENHANCED', frame_msg);     
         %}
         
         %% show original and enhanced
-        %{
+        %
         window_start =  0.375 * frame_msg.m_nWindowStart;
         window_length = 1.125*(power(2,(frame_msg.m_nWindowLength)));
         max_range = window_start + window_length;
         max_range_e = max_range + 1; % used to generate endpoints beyond max range for empty beam measurements
+        
+        set(0, 'CurrentFigure', h);
         subplot(1,2,1)
+%         imshow(frame')
         imshow(polarToCart(frame,window_start,window_length,500)')
         title('original')
         subplot(1,2,2)
+%         imshow(enhanced_frame')
         imshow(polarToCart(enhanced_frame,window_start,window_length,500)')
         title('enhanced')
         %hold on
