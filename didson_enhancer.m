@@ -44,7 +44,10 @@ while true
         if( min(enhanced_frame(:)) < 0)
             disp(['warning: enhanced frame has negative values! (min=',num2str(min(enhanced_frame(:))),')'])
         end
-        
+
+        % adding median filter (pvt, 2015.11.23)
+        enhanced_frame = medfilt2(enhanced_frame);
+                
         %% re-transmit improved image
         %
         frame_msg.m_cData = typecast(reshape(im2uint8(enhanced_frame),512*96,1),'int8');

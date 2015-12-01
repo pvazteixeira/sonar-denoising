@@ -1,4 +1,4 @@
-% DIDSON_ENHANCER.M A live script to DIDSON frames and extract returns
+% DIDSON_VIEWER.M A live script to show DIDSON frames.
 %
 % The purpose of this script is to listen for DIDSON frames, enhance them
 % using deconvolution/noise reduction/... and then extract returns, which
@@ -12,7 +12,7 @@
 close all;  % close any open figures
 clc;        % clear the console
 clear;
-addjars;
+addjars;    
 
 %% LCM
 lc = lcm.lcm.LCM.getSingleton();
